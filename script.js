@@ -11,8 +11,8 @@ const supportedFileTypes = {
     'application/pdf': ['image/png'],
 };
 
-let currentFile;
-let selectedType;
+let currentFile = null; // Store the uploaded file
+let selectedType = null; // Store the selected conversion type
 
 dropArea.addEventListener('click', () => fileInput.click());
 
@@ -39,6 +39,7 @@ function handleFile(file) {
     conversionButtons.innerHTML = '';
     convertButton.disabled = true;
 
+    // Display preview for images
     if (file.type.startsWith('image/')) {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
@@ -69,7 +70,7 @@ function populateConversionButtons(fileType) {
 
 function handleConversionOption(type) {
     selectedType = type;
-    convertButton.disabled = false;
+    convertButton.disabled = false; // Enable the convert button
 }
 
 convertButton.addEventListener('click', async () => {
