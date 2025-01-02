@@ -19,8 +19,13 @@ body {
     border: 2px dashed #ffffff;
     border-radius: 8px;
     padding: 40px;
-    width: 90%;
-    max-width: 400px;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .container:hover {
@@ -33,10 +38,11 @@ input[type="file"] {
 
 .file-preview {
     margin: 20px 0;
+    text-align: center;
 }
 
-select, button {
-    margin: 10px 0;
+button, .conversion-option {
+    margin: 10px 5px;
     padding: 10px;
     border: none;
     border-radius: 5px;
@@ -46,16 +52,8 @@ select, button {
     cursor: pointer;
 }
 
-button {
-    background-color: #00c853;
-}
-
-button:hover {
+button:hover, .conversion-option:hover {
     background-color: #00e676;
-}
-
-select {
-    width: 100%;
 }
 
 .dragover {
