@@ -30,8 +30,8 @@ fileInput.addEventListener("change", (event) => {
 function handleFile(file) {
   if (!file) return;
 
-  if (!file.type.includes("webp")) {
-    alert("Please select a valid WebP file.");
+  if (!file.type.match(/image\/(webp|jpeg|jpg)/)) {
+    alert("Please select a valid WebP, JPG, or JPEG file.");
     return;
   }
 
