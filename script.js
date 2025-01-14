@@ -30,12 +30,15 @@ fileInput.addEventListener("change", (event) => {
 function handleFile(file) {
   if (!file) return;
 
-  if (!file.type.match(/image\/(webp|jpeg|jpg)/)) {
-    alert("Please select a valid WebP, JPG, or JPEG file.");
-    return;
-  }
+  const fileType = file.type;
 
-  convertAndDownload(file);
+  if (fileType.match(/image\/(webp|jpeg|jpg)/)) {
+    convertAndDownload(file);
+  } else if (fileType.match(/video\/webm/)) {
+    convertWebmToMp4(file);
+  } else {
+    alert("Unsupported file type.");
+  }
 }
 
 function convertAndDownload(file) {
@@ -56,7 +59,7 @@ function convertAndDownload(file) {
 
       const downloadLink = document.createElement("a");
       downloadLink.href = pngUrl;
-      downloadLink.download = `${file.name.replace(".webp", ".png")}`;
+      downloadLink.download = `${file.name.replace(/\.(webp|jpg|jpeg)$/i, ".png")}`;
       downloadLink.click();
 
       const screenWidth = window.innerWidth * 0.4;
@@ -72,4 +75,26 @@ function convertAndDownload(file) {
   };
 
   fileReader.readAsDataURL(file);
+}
+
+async function convertWebmToMp4(file) {
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  const ffmpeg = createFFmpeg({ log: true });
+  
+  await ffmpeg.load();
+  
+  ffmpeg.FS('writeFile', file.name, await fetchFile(file));
+  
+  await ffmpeg.run('-i', file.name, 'output.mp4');
+  
+  const mp4Data = ffmpeg.FS('readFile', 'output.mp4');
+  
+  const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
+  const mp4Url = URL.createObjectURL(mp4Blob);
+  
+  const downloadLink = document.createElement('a');
+  downloadLink.href = mp4Url;
+  downloadLink.download = file.name.replace(/\.(webm)$/i, '.mp4');
+  downloadLink.click();
+  
 }
