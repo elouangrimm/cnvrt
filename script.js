@@ -3,10 +3,8 @@ const fileInput = document.getElementById("file-input");
 const filePreview = document.getElementById("file-preview");
 const selectFileButton = document.getElementById("select-file-btn");
 
-// Add click event to open file picker dialog
 selectFileButton.addEventListener("click", () => fileInput.click());
 
-// Handle drag and drop
 dropArea.addEventListener("dragover", (event) => {
   event.preventDefault();
   dropArea.classList.add("dragover");
@@ -21,15 +19,14 @@ dropArea.addEventListener("dragleave", () => {
 dropArea.addEventListener("drop", (event) => {
   event.preventDefault();
   dropArea.classList.remove("dragover");
+  document.getElementById("upload-instruction").textContent = "";
   handleFile(event.dataTransfer.files[0]);
 });
 
-// Handle file input change
 fileInput.addEventListener("change", (event) => {
   handleFile(event.target.files[0]);
 });
 
-// Handle file selection
 function handleFile(file) {
   if (!file) return;
 
@@ -41,7 +38,6 @@ function handleFile(file) {
   convertAndDownload(file);
 }
 
-// Convert WebP to PNG and download
 function convertAndDownload(file) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -51,28 +47,25 @@ function convertAndDownload(file) {
 
   fileReader.onload = () => {
     img.onload = () => {
-      // Resize the image to 40% of the screen width
-      const targetWidth = window.innerWidth * 0.4;
-      const aspectRatio = img.height / img.width;
+      canvas.width = img.width;
+      canvas.height = img.height;
 
-      canvas.width = targetWidth;
-      canvas.height = targetWidth * aspectRatio;
+      ctx.drawImage(img, 0, 0);
 
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // Convert the canvas content to PNG
       const pngUrl = canvas.toDataURL("image/png");
 
-      // Auto-download the converted PNG
       const downloadLink = document.createElement("a");
       downloadLink.href = pngUrl;
       downloadLink.download = `${file.name.replace(".webp", ".png")}`;
       downloadLink.click();
 
-      // Display a preview of the PNG image
+      const screenWidth = window.innerWidth * 0.4;
+      const previewHeight = (screenWidth / img.width) * img.height;
+
       filePreview.innerHTML = `
-        <img src="${pngUrl}" alt="File preview" style="max-width: 100%; height: auto; border: 1px solid #ffffff; border-radius: 8px;">
-        <p>Image downloaded as ${file.name.replace(".webp", ".png")}</p>
+        <img src="${pngUrl}" alt="File preview" 
+             style="width: ${screenWidth}px; height: ${previewHeight}px; border: 1px solid #ffffff; border-radius: 8px;">
+        <p>${file.name.replace(".webp", ".png")}</p>
       `;
     };
     img.src = fileReader.result;

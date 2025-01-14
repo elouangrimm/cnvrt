@@ -19,17 +19,10 @@ body {
     border: 2px dashed #ffffff;
     border-radius: 8px;
     padding: 40px;
-    width: 100%;
-    height: 100%;
-    max-width: none;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-}
-
-.container:hover {
-    background-color: #1e1e1e;
 }
 
 input[type="file"] {
@@ -41,19 +34,19 @@ input[type="file"] {
     text-align: center;
 }
 
-button, .conversion-option {
-    margin: 10px 5px;
+button {
+    margin: 10px;
     padding: 10px;
     border: none;
     border-radius: 5px;
-    background-color: #1e88e5;
+    background-color: #7DB84F;
     color: #ffffff;
     font-size: 16px;
     cursor: pointer;
 }
 
-button:hover, .conversion-option:hover {
-    background-color: #00e676;
+button:hover {
+    background-color: #9ed970;
 }
 
 .dragover {
