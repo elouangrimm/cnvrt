@@ -12,6 +12,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    user-select: none;
 }
 
 .container {
@@ -19,6 +20,8 @@ body {
     border: 2px dashed #ffffff;
     border-radius: 8px;
     padding: 40px;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -46,7 +49,7 @@ button {
 }
 
 button:hover {
-    background-color: #9ed970;
+    background-color: #96ca6e;
 }
 
 .dragover {
