@@ -1,116 +1,83 @@
-const dropArea = document.getElementById('drop-area');
-const fileInput = document.getElementById('file-input');
-const filePreview = document.getElementById('file-preview');
-const conversionButtons = document.getElementById('conversion-buttons');
-const convertButton = document.getElementById('convert-btn');
+const dropArea = document.getElementById("drop-area");
+const fileInput = document.getElementById("file-input");
+const filePreview = document.getElementById("file-preview");
+const convertButton = document.getElementById("convert-btn");
 
-const supportedFileTypes = {
-    'image/png': ['image/jpeg', 'image/webp', 'icon'],
-    'image/jpeg': ['image/png', 'image/webp', 'icon'],
-    'image/webp': ['image/png', 'image/jpeg', 'icon'],
-    'application/pdf': ['image/png'],
-};
+let selectedFile = null;
 
-let currentFile = null; // Store the uploaded file
-let selectedType = null; // Store the selected conversion type
-
-dropArea.addEventListener('click', () => fileInput.click());
-
-dropArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropArea.classList.add('dragover');
+dropArea.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  dropArea.classList.add("dragover");
+  document.getElementById("upload-instruction").textContent = "Drop the file here!";
 });
 
-dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
-
-dropArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropArea.classList.remove('dragover');
-    handleFile(e.dataTransfer.files[0]);
+dropArea.addEventListener("dragleave", () => {
+  dropArea.classList.remove("dragover");
+  document.getElementById("upload-instruction").textContent = "Drag or upload a file";
 });
 
-fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+dropArea.addEventListener("drop", (event) => {
+  event.preventDefault();
+  dropArea.classList.remove("dragover");
+  handleFile(event.dataTransfer.files[0]);
+});
+
+fileInput.addEventListener("change", (event) => {
+  handleFile(event.target.files[0]);
+});
 
 function handleFile(file) {
-    if (!file) return;
+  if (!file) return;
 
-    currentFile = file;
-    filePreview.textContent = '';
-    conversionButtons.innerHTML = '';
-    convertButton.disabled = true;
+  if (!file.type.includes("webp")) {
+    alert("Please select a valid WebP file.");
+    return;
+  }
 
-    // Display preview for images
-    if (file.type.startsWith('image/')) {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        img.style.maxWidth = '100%';
-        img.style.marginBottom = '20px';
-        filePreview.appendChild(img);
-    } else {
-        filePreview.textContent = `File: ${file.name}`;
-    }
-
-    populateConversionButtons(file.type);
+  selectedFile = file;
+  displayFilePreview(file);
+  convertButton.disabled = false;
 }
 
-function populateConversionButtons(fileType) {
-    if (supportedFileTypes[fileType]) {
-        supportedFileTypes[fileType].forEach((type) => {
-            const button = document.createElement('button');
-            button.textContent = type.split('/')[1]?.toUpperCase() || type.toUpperCase();
-            button.classList.add('conversion-option');
-            button.dataset.type = type;
-            button.addEventListener('click', () => handleConversionOption(type));
-            conversionButtons.appendChild(button);
-        });
-    } else {
-        alert('Unsupported file type');
-    }
+function displayFilePreview(file) {
+  const fileReader = new FileReader();
+  fileReader.onload = () => {
+    filePreview.innerHTML = `
+      <img src="${fileReader.result}" alt="File preview" style="max-width: 100%; height: auto; border: 1px solid #ffffff; border-radius: 8px;">
+      <p>${file.name}</p>
+    `;
+  };
+  fileReader.readAsDataURL(file);
 }
 
-function handleConversionOption(type) {
-    selectedType = type;
-    convertButton.disabled = false; // Enable the convert button
-}
+convertButton.addEventListener("click", () => {
+  if (!selectedFile) return;
 
-convertButton.addEventListener('click', async () => {
-    if (!currentFile || !selectedType) {
-        alert('Please select a file and conversion type.');
-        return;
-    }
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
 
-    const fileReader = new FileReader();
-    fileReader.onload = async (e) => {
-        const arrayBuffer = e.target.result;
+  const img = new Image();
+  const fileReader = new FileReader();
 
-        if (selectedType.startsWith('image/')) {
-            convertImage(arrayBuffer, selectedType);
-        } else {
-            alert('Conversion type not yet implemented for this file type.');
-        }
-    };
-    fileReader.readAsArrayBuffer(currentFile);
-});
-
-function convertImage(arrayBuffer, outputType) {
-    const blob = new Blob([arrayBuffer]);
-    const img = new Image();
-    img.src = URL.createObjectURL(blob);
+  fileReader.onload = () => {
     img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
 
-        const convertedDataUrl = canvas.toDataURL(outputType);
-        downloadFile(convertedDataUrl, `converted.${outputType.split('/')[1]}`);
+      const pngUrl = canvas.toDataURL("image/png");
+
+      const downloadLink = document.createElement("a");
+      downloadLink.href = pngUrl;
+      downloadLink.download = `${selectedFile.name.replace(".webp", ".png")}`;
+      downloadLink.textContent = "Download PNG";
+      downloadLink.style.display = "block";
+      downloadLink.style.color = "#00e676";
+
+      filePreview.appendChild(downloadLink);
     };
-}
+    img.src = fileReader.result;
+  };
 
-function downloadFile(dataUrl, filename) {
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = filename;
-    a.click();
-}
+  fileReader.readAsDataURL(selectedFile);
+});
