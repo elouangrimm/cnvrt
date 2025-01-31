@@ -139,25 +139,26 @@ async function convertVideoToMp4(file) {
 
 async function convertAudioToMp3(file) {
   if (!ffmpegReady) {
-    console.error("FFmpeg is not ready yet.");
-    return;
+      console.error("FFmpeg is not ready yet.");
+      return;
   }
 
-	ffmpeg.FS('writeFile', file.name, await fetchFile(file));
+  ffmpeg.FS('writeFile', file.name, await fetchFile(file));
 
-	const outputFileName = file.name.replace(/\.(wav|m4a|aac)$/i, '.mp3');
+  const outputFileName = file.name.replace(/\.(wav|m4a|aac)$/i, '.mp3');
 
   progressContainer.style.display = "block";
   progressText.textContent = "Converting audio...";
 
   await ffmpeg.run('-i', file.name, outputFileName, {
-    onProgress: (progress) => {
-        if (progress && progress.percent !== undefined) {
-            progressBar.value = progress.percent;
-            progressText.textContent = `Converting audio... ${Math.round(progress.percent)}%`;
-        }
-    }
-});
+      onProgress: (progress) => {
+          console.log("Progress:", progress);
+          if (progress && progress.percent !== undefined) {
+              progressBar.value = progress.percent;
+              progressText.textContent = `Converting audio... ${Math.round(progress.percent)}%`;
+          }
+      }
+  });
 
 	const mp3Data = ffmpeg.FS('readFile', outputFileName);
 	const mp3Blob = new Blob([mp3Data.buffer], {
