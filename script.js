@@ -32,16 +32,18 @@ function handleFile(file) {
 
   const fileType = file.type;
 
-  if (fileType.match(/image\/(webp|jpeg|jpg)/)) {
-    convertAndDownload(file);
-  } else if (fileType.match(/video\/webm/)) {
-    convertWebmToMp4(file);
+  if (fileType.match(/audio\/(wav|m4a|aac)/)) {
+      convertAudioToMp3(file);
+  } else if (fileType.match(/image\/(webp|jpeg|jpg|png|gif|bmp|tiff)/)) {
+      convertImageToPng(file);
+  } else if (fileType.match(/video\/(webm|mp4|avi|mov|mkv)/)) {
+      convertVideoToMp4(file);
   } else {
-    alert("Unsupported file type.");
+      alert("Unsupported file type.");
   }
 }
 
-function convertAndDownload(file) {
+function convertImageToPng(file) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
@@ -77,7 +79,7 @@ function convertAndDownload(file) {
   fileReader.readAsDataURL(file);
 }
 
-async function convertWebmToMp4(file) {
+async function convertVideoToMp4(file) {
   const { createFFmpeg, fetchFile } = FFmpeg;
   const ffmpeg = createFFmpeg({ log: true });
   
@@ -99,6 +101,27 @@ async function convertWebmToMp4(file) {
   
 }
 
+async function convertAudioToMp3(file) {
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  const ffmpeg = createFFmpeg({ log: true });
+
+  await ffmpeg.load();
+  ffmpeg.FS('writeFile', file.name, await fetchFile(file));
+
+  const outputFileName = file.name.replace(/\.(wav|m4a|aac)$/i, '.mp3');
+  await ffmpeg.run('-i', file.name, outputFileName);
+
+  const mp3Data = ffmpeg.FS('readFile', outputFileName);
+  const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mp3' });
+  const mp3Url = URL.createObjectURL(mp3Blob);
+
+  const downloadLink = document.createElement('a');
+  downloadLink.href = mp3Url;
+  downloadLink.download = outputFileName;
+  downloadLink.click();
+}
+
+/*
 const helpIcon = document.getElementById("help-icon");
 const modal = document.getElementById("modal");
 const closeButton = document.querySelector(".close-button");
@@ -115,4 +138,4 @@ window.addEventListener("click", (event) => {
     if (event.target === modal) {
         modal.style.display = "none";
     }
-});
+}); */
