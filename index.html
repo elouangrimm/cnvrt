@@ -6,6 +6,7 @@
     <title>Convert</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@latest"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
     <div class="container" id="drop-area">
@@ -14,6 +15,13 @@
         <input type="file" id="file-input" accept=".webp, .jpg, .jpeg, .webm" />
         <div class="file-preview" id="file-preview"></div>
     </div>
+    <span class="material-icons" id="help-icon">help</span>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p>converter</p>
+        </div>
+    </div>    
     <script src="script.js"></script>
 </body>
 </html>
