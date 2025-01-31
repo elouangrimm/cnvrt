@@ -17,7 +17,7 @@ selectFileButton.addEventListener("click", () => fileInput.click());
 dropArea.addEventListener("dragover", (event) => {
     event.preventDefault();
     dropArea.classList.add("dragover");
-    document.getElementById("upload-instruction").textContent = "Drop the file here!";
+    document.getElementById("upload-instruction").textContent = "Drop the file HERE!";
 });
 
 dropArea.addEventListener("dragleave", () => {
@@ -28,11 +28,12 @@ dropArea.addEventListener("dragleave", () => {
 dropArea.addEventListener("drop", (event) => {
     event.preventDefault();
     dropArea.classList.remove("dragover");
-    document.getElementById("upload-instruction").textContent = "";
+    document.getElementById("upload-instruction").textContent = "Your file has been uploaded. Please wait while it is being converted.";
     handleFile(event.dataTransfer.files[0]);
 });
 
 fileInput.addEventListener("change", (event) => {
+    document.getElementById("upload-instruction").textContent = "Your file has been uploaded. Please wait while it is being converted.";
     handleFile(event.target.files[0]);
 });
 
@@ -90,6 +91,9 @@ async function convertImageToPng(file) {
   };
 
   fileReader.readAsDataURL(file);
+  setTimeout(() => {
+    location.reload();
+  }, 1000);
 }
 
 async function convertVideoToMp4(file) {
@@ -107,6 +111,9 @@ async function convertVideoToMp4(file) {
   downloadLink.href = mp4Url;
   downloadLink.download = outputFileName;
   downloadLink.click();
+  setTimeout(() => {
+    location.reload();
+  }, 1000);
 }
 
 async function convertAudioToMp3(file) {
@@ -123,6 +130,9 @@ async function convertAudioToMp3(file) {
   downloadLink.href = mp3Url;
   downloadLink.download = outputFileName;
   downloadLink.click();
+  setTimeout(() => {
+    location.reload();
+  }, 1000);
 }
 
 window.onload = loadFFmpeg;
