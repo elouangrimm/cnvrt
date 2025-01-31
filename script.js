@@ -8,9 +8,9 @@ const ffmpeg = createFFmpeg({ log: true });
 
 async function loadFFmpeg() {
     await ffmpeg.load();
+    ffmpegReady = true;
+    console.log("FFmpeg loaded successfully!");
 }
-
-loadFFmpeg();
 
 selectFileButton.addEventListener("click", () => fileInput.click());
 
@@ -37,6 +37,10 @@ fileInput.addEventListener("change", (event) => {
 });
 
 function handleFile(file) {
+    if (!ffmpegReady) {
+      console.error("FFmpeg is not ready yet.");
+      return;
+    }
     if (!file) return;
 
     const fileType = file.type;
@@ -120,6 +124,8 @@ async function convertAudioToMp3(file) {
   downloadLink.download = outputFileName;
   downloadLink.click();
 }
+
+window.onload = loadFFmpeg;
 
 /*
 const helpIcon = document.getElementById("help-icon");
