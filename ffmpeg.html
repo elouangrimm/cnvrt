@@ -6,13 +6,7 @@
     <title>FFmpeg Test</title>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@latest"></script>
     <script>
-        window.onload = async () => {
-            const { createFFmpeg, fetchFile } = FFmpeg;
-            const ffmpeg = createFFmpeg({ log: true });
-
-            await ffmpeg.load();
-            console.log("FFmpeg loaded successfully!");
-        };
+        console.log(FFmpeg);
     </script>
 </head>
 <body>
