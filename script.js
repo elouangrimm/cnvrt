@@ -3,6 +3,9 @@ const fileInput = document.getElementById("file-input");
 const filePreview = document.getElementById("file-preview");
 const selectFileButton = document.getElementById("select-file-btn");
 
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ log: true });
+
 selectFileButton.addEventListener("click", () => fileInput.click());
 
 dropArea.addEventListener("dragover", (event) => {
