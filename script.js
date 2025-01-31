@@ -150,7 +150,14 @@ async function convertAudioToMp3(file) {
   progressContainer.style.display = "block";
   progressText.textContent = "Converting audio...";
 
-  await ffmpeg.run('-i', file.name, outputFileName);
+  await ffmpeg.run('-i', file.name, outputFileName, {
+    onProgress: (progress) => {
+        if (progress && progress.percent !== undefined) {
+            progressBar.value = progress.percent;
+            progressText.textContent = `Converting audio... ${Math.round(progress.percent)}%`;
+        }
+    }
+});
 
 	const mp3Data = ffmpeg.FS('readFile', outputFileName);
 	const mp3Blob = new Blob([mp3Data.buffer], {
