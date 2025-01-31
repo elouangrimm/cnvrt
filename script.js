@@ -142,6 +142,11 @@ async function convertAudioToMp3(file) {
 
 	const outputFileName = file.name.replace(/\.(wav|m4a|aac)$/i, '.mp3');
 
+  if (!outputFileName) {
+    console.error("Output file name is invalid.");
+    return;
+  }
+
   progressContainer.style.display = "block";
   progressText.textContent = "Converting audio...";
 
