@@ -7,7 +7,7 @@ const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({ log: true });
 
 async function loadFFmpeg() {
-  await ffmpeg.load();
+    await ffmpeg.load();
 }
 
 loadFFmpeg();
@@ -15,109 +15,110 @@ loadFFmpeg();
 selectFileButton.addEventListener("click", () => fileInput.click());
 
 dropArea.addEventListener("dragover", (event) => {
-  event.preventDefault();
-  dropArea.classList.add("dragover");
-  document.getElementById("upload-instruction").textContent = "Drop the file here!";
+    event.preventDefault();
+    dropArea.classList.add("dragover");
+    document.getElementById("upload-instruction").textContent = "Drop the file here!";
 });
 
 dropArea.addEventListener("dragleave", () => {
-  dropArea.classList.remove("dragover");
-  document.getElementById("upload-instruction").textContent = "Drag a file or select one below:";
+    dropArea.classList.remove("dragover");
+    document.getElementById("upload-instruction").textContent = "Drag a file or select one below:";
 });
 
 dropArea.addEventListener("drop", (event) => {
-  event.preventDefault();
-  dropArea.classList.remove("dragover");
-  document.getElementById("upload-instruction").textContent = "";
-  handleFile(event.dataTransfer.files[0]);
+    event.preventDefault();
+    dropArea.classList.remove("dragover");
+    document.getElementById("upload-instruction").textContent = "";
+    handleFile(event.dataTransfer.files[0]);
 });
 
 fileInput.addEventListener("change", (event) => {
-  handleFile(event.target.files[0]);
+    handleFile(event.target.files[0]);
 });
 
 function handleFile(file) {
-  if (!file) return;
+    if (!file) return;
 
-  const fileType = file.type;
+    const fileType = file.type;
 
-  if (fileType.match(/audio\/(wav|m4a|aac)/)) {
-      convertAudioToMp3(file);
-  } else if (fileType.match(/image\/(webp|jpeg|jpg|png|gif|bmp|tiff)/)) {
-      convertImageToPng(file);
-  } else if (fileType.match(/video\/(webm|mp4|avi|mov|mkv)/)) {
-      convertVideoToMp4(file);
-  } else {
-      alert("Unsupported file type.");
-  }
+    if (fileType.match(/audio\/(wav|m4a|aac)/)) {
+        convertAudioToMp3(file);
+    } else if (fileType.match(/image\/(webp|jpeg|jpg|png|gif|bmp|tiff)/)) {
+        convertImageToPng(file);
+    } else if (fileType.match(/video\/(webm|mp4|avi|mov|mkv)/)) {
+        convertVideoToMp4(file);
+    } else {
+        alert("Unsupported file type.");
+    }
 }
 
-function convertImageToPng(file) {
+async function convertImageToPng(file) {
   const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d");
 
-    const img = new Image();
-    const fileReader = new FileReader();
+  const img = new Image();
+  const fileReader = new FileReader();
 
-    fileReader.onload = () => {
-        img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
+  fileReader.onload = () => {
+      img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
 
-            ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0);
 
-            const pngUrl = canvas.toDataURL("image/png");
+          const pngUrl = canvas.toDataURL("image/png");
 
-            const downloadLink = document.createElement("a");
-            downloadLink.href = pngUrl;
-            downloadLink.download = `${file.name.replace(/\.(webp|jpg|jpeg)$/i, ".png")}`;
-            downloadLink.click();
+          const downloadLink = document.createElement("a");
+          downloadLink.href = pngUrl;
+          downloadLink.download = `${file.name.replace(/\.(webp|jpg|jpeg)$/i, ".png")}`;
+          downloadLink.click();
 
-            const screenWidth = window.innerWidth * 0.4;
-            const previewHeight = (screenWidth / img.width) * img.height;
+          const screenWidth = window.innerWidth * 0.4;
+          const previewHeight = (screenWidth / img.width) * img.height;
 
-            filePreview.innerHTML = `
-                <img src="${pngUrl}" alt="File preview" 
-                     style="width: ${screenWidth}px; height: ${previewHeight}px; border: 1px solid #ffffff; border-radius: 8px;">
-                <p>${file.name.replace(".webp", ".png")}</p>
-            `;
-        };
-        img.src = fileReader.result;
-    };
+          filePreview.innerHTML = `
+              <img src="${pngUrl}" alt="File preview" 
+                   style="width: ${screenWidth}px; height: ${previewHeight}px; border: 1px solid #ffffff; border-radius: 8px;">
+              <p>${file.name.replace(".webp", ".png")}</p>
+          `;
+      };
+      img.src = fileReader.result;
+  };
 
-    fileReader.readAsDataURL(file);
+  fileReader.readAsDataURL(file);
 }
 
 async function convertVideoToMp4(file) {
   ffmpeg.FS('writeFile', file.name, await fetchFile(file));
-    
-    await ffmpeg.run('-i', file.name, 'output.mp4');
-    
-    const mp4Data = ffmpeg.FS('readFile', 'output.mp4');
-    
-    const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
-    const mp4Url = URL.createObjectURL(mp4Blob);
-    
-    const downloadLink = document.createElement('a');
-    downloadLink.href = mp4Url;
-    downloadLink.download = file.name.replace(/\.(webm|avi|mov|mkv)$/i, '.mp4');
-    downloadLink.click();
+  
+  const outputFileName = file.name.replace(/\.(webm|avi|mov|mkv)$/i, '.mp4');
+  await ffmpeg.run('-i', file.name, outputFileName);
+  
+  const mp4Data = ffmpeg.FS('readFile', outputFileName);
+  
+  const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
+  const mp4Url = URL.createObjectURL(mp4Blob);
+  
+  const downloadLink = document.createElement('a');
+  downloadLink.href = mp4Url;
+  downloadLink.download = outputFileName;
+  downloadLink.click();
 }
 
 async function convertAudioToMp3(file) {
   ffmpeg.FS('writeFile', file.name, await fetchFile(file));
 
-    const outputFileName = file.name.replace(/\.(wav|m4a|aac)$/i, '.mp3');
-    await ffmpeg.run('-i', file.name, outputFileName);
+  const outputFileName = file.name.replace(/\.(wav|m4a|aac)$/i, '.mp3');
+  await ffmpeg.run('-i', file.name, outputFileName);
 
-    const mp3Data = ffmpeg.FS('readFile', outputFileName);
-    const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mp3' });
-    const mp3Url = URL.createObjectURL(mp3Blob);
+  const mp3Data = ffmpeg.FS('readFile', outputFileName);
+  const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mp3' });
+  const mp3Url = URL.createObjectURL(mp3Blob);
 
-    const downloadLink = document.createElement('a');
-    downloadLink.href = mp3Url;
-    downloadLink.download = outputFileName;
-    downloadLink.click();
+  const downloadLink = document.createElement('a');
+  downloadLink.href = mp3Url;
+  downloadLink.download = outputFileName;
+  downloadLink.click();
 }
 
 /*
