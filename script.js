@@ -162,9 +162,9 @@ async function convertAudioToMp3(file) {
 	downloadLink.href = mp3Url;
 	downloadLink.download = outputFileName;
 	downloadLink.click();
-	setTimeout(() => {
-		location.reload();
-	}, 1000);
+	// setTimeout(() => {
+	// 	location.reload();
+	// }, 1000);
 }
 
 window.onload = loadFFmpeg;
