@@ -150,15 +150,21 @@ async function convertAudioToMp3(file) {
   progressContainer.style.display = "block";
   progressText.textContent = "Converting audio...";
 
-  await ffmpeg.run('-i', file.name, outputFileName, {
-      onProgress: (progress) => {
-          console.log("Progress:", progress);
-          if (progress && progress.percent !== undefined) {
-              progressBar.value = progress.percent;
-              progressText.textContent = `Converting audio... ${Math.round(progress.percent)}%`;
-          }
-      }
+  ffmpeg.setLogger(({ type, message }) => {
+    if (type === 'info' && message.includes('time=')) {
+        const timeMatch = message.match(/time=(\d+:\d+:\d+\.\d+)/);
+        const durationMatch = message.match(/Duration: (\d+:\d+:\d+\.\d+)/);
+        if (timeMatch && durationMatch) {
+            const currentTime = timeToSeconds(timeMatch[1]);
+            const totalTime = timeToSeconds(durationMatch[1]);
+            const progress = (currentTime / totalTime) * 100;
+            progressBar.value = progress;
+            progressText.textContent = `Converting audio... ${Math.round(progress)}%`;
+        }
+    }
   });
+
+  await ffmpeg.run('-i', file.name, outputFileName);
 
 	const mp3Data = ffmpeg.FS('readFile', outputFileName);
 	const mp3Blob = new Blob([mp3Data.buffer], {
@@ -173,6 +179,14 @@ async function convertAudioToMp3(file) {
 	// setTimeout(() => {
 	// 	location.reload();
 	// }, 1000);
+}
+
+function timeToSeconds(time) {
+  const parts = time.split(':');
+  const seconds = parseFloat(parts.pop());
+  const minutes = parseInt(parts.pop(), 10) || 0;
+  const hours = parseInt(parts.pop(), 10) || 0;
+  return hours * 3600 + minutes * 60 + seconds;
 }
 
 window.onload = loadFFmpeg;
