@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFmpeg Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@latest"></script>
+    <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+
+        async function loadFFmpeg() {
+            await ffmpeg.load();
+            console.log("FFmpeg loaded successfully!");
+        }
+
+        loadFFmpeg();
+    </script>
+</head>
+<body>
+    <h1>Testing FFMpeg: Check the console for FFmpeg status.</h1>
+</body>
+</html>
