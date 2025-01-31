@@ -6,6 +6,12 @@ const selectFileButton = document.getElementById("select-file-btn");
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({ log: true });
 
+async function loadFFmpeg() {
+  await ffmpeg.load();
+}
+
+loadFFmpeg();
+
 selectFileButton.addEventListener("click", () => fileInput.click());
 
 dropArea.addEventListener("dragover", (event) => {
@@ -48,80 +54,70 @@ function handleFile(file) {
 
 function convertImageToPng(file) {
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d");
 
-  const img = new Image();
-  const fileReader = new FileReader();
+    const img = new Image();
+    const fileReader = new FileReader();
 
-  fileReader.onload = () => {
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
+    fileReader.onload = () => {
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
 
-      ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0);
 
-      const pngUrl = canvas.toDataURL("image/png");
+            const pngUrl = canvas.toDataURL("image/png");
 
-      const downloadLink = document.createElement("a");
-      downloadLink.href = pngUrl;
-      downloadLink.download = `${file.name.replace(/\.(webp|jpg|jpeg)$/i, ".png")}`;
-      downloadLink.click();
+            const downloadLink = document.createElement("a");
+            downloadLink.href = pngUrl;
+            downloadLink.download = `${file.name.replace(/\.(webp|jpg|jpeg)$/i, ".png")}`;
+            downloadLink.click();
 
-      const screenWidth = window.innerWidth * 0.4;
-      const previewHeight = (screenWidth / img.width) * img.height;
+            const screenWidth = window.innerWidth * 0.4;
+            const previewHeight = (screenWidth / img.width) * img.height;
 
-      filePreview.innerHTML = `
-        <img src="${pngUrl}" alt="File preview" 
-             style="width: ${screenWidth}px; height: ${previewHeight}px; border: 1px solid #ffffff; border-radius: 8px;">
-        <p>${file.name.replace(".webp", ".png")}</p>
-      `;
+            filePreview.innerHTML = `
+                <img src="${pngUrl}" alt="File preview" 
+                     style="width: ${screenWidth}px; height: ${previewHeight}px; border: 1px solid #ffffff; border-radius: 8px;">
+                <p>${file.name.replace(".webp", ".png")}</p>
+            `;
+        };
+        img.src = fileReader.result;
     };
-    img.src = fileReader.result;
-  };
 
-  fileReader.readAsDataURL(file);
+    fileReader.readAsDataURL(file);
 }
 
 async function convertVideoToMp4(file) {
-  const { createFFmpeg, fetchFile } = FFmpeg;
-  const ffmpeg = createFFmpeg({ log: true });
-  
-  await ffmpeg.load();
-  
   ffmpeg.FS('writeFile', file.name, await fetchFile(file));
-  
-  await ffmpeg.run('-i', file.name, 'output.mp4');
-  
-  const mp4Data = ffmpeg.FS('readFile', 'output.mp4');
-  
-  const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
-  const mp4Url = URL.createObjectURL(mp4Blob);
-  
-  const downloadLink = document.createElement('a');
-  downloadLink.href = mp4Url;
-  downloadLink.download = file.name.replace(/\.(webm)$/i, '.mp4');
-  downloadLink.click();
-  
+    
+    await ffmpeg.run('-i', file.name, 'output.mp4');
+    
+    const mp4Data = ffmpeg.FS('readFile', 'output.mp4');
+    
+    const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
+    const mp4Url = URL.createObjectURL(mp4Blob);
+    
+    const downloadLink = document.createElement('a');
+    downloadLink.href = mp4Url;
+    downloadLink.download = file.name.replace(/\.(webm|avi|mov|mkv)$/i, '.mp4');
+    downloadLink.click();
 }
 
 async function convertAudioToMp3(file) {
-  const { createFFmpeg, fetchFile } = FFmpeg;
-  const ffmpeg = createFFmpeg({ log: true });
-
-  await ffmpeg.load();
   ffmpeg.FS('writeFile', file.name, await fetchFile(file));
 
-  const outputFileName = file.name.replace(/\.(wav|m4a|aac)$/i, '.mp3');
-  await ffmpeg.run('-i', file.name, outputFileName);
+    const outputFileName = file.name.replace(/\.(wav|m4a|aac)$/i, '.mp3');
+    await ffmpeg.run('-i', file.name, outputFileName);
 
-  const mp3Data = ffmpeg.FS('readFile', outputFileName);
-  const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mp3' });
-  const mp3Url = URL.createObjectURL(mp3Blob);
+    const mp3Data = ffmpeg.FS('readFile', outputFileName);
+    const mp3Blob = new Blob([mp3Data.buffer], { type: 'audio/mp3' });
+    const mp3Url = URL.createObjectURL(mp3Blob);
 
-  const downloadLink = document.createElement('a');
-  downloadLink.href = mp3Url;
-  downloadLink.download = outputFileName;
-  downloadLink.click();
+    const downloadLink = document.createElement('a');
+    downloadLink.href = mp3Url;
+    downloadLink.download = outputFileName;
+    downloadLink.click();
 }
 
 /*
