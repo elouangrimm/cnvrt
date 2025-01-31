@@ -6,13 +6,13 @@
     <title>FFmpeg Test</title>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@latest"></script>
     <script>
-        const { createFFmpeg, fetchFile } = FFmpeg;
-        const ffmpeg = createFFmpeg({ log: true });
+        window.onload = async () => {
+            const { createFFmpeg, fetchFile } = FFmpeg;
+            const ffmpeg = createFFmpeg({ log: true });
 
-        async function loadFFmpeg() {
             await ffmpeg.load();
             console.log("FFmpeg loaded successfully!");
-        }
+        };
 
         loadFFmpeg();
     </script>
