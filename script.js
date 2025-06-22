@@ -2,7 +2,7 @@
 const dropArea = document.getElementById("drop-area");
 const fileInput = document.getElementById("file-input");
 const selectFileButton = document.getElementById("select-file-btn");
-const ffmpegLoader = document.getElementById("ffmpeg-loader");
+const engineLoader = document.getElementById("engine-loader");
 const initialState = document.getElementById("initial-state");
 const filePreview = document.getElementById("file-preview");
 const conversionControls = document.getElementById("conversion-controls");
@@ -15,48 +15,77 @@ const finishedState = document.getElementById("finished-state");
 const downloadLink = document.getElementById("download-link");
 const resetBtn = document.getElementById("reset-btn");
 
+// --- Global State ---
+let selectedFile = null;
+let currentHandler = null;
+const libraryStatus = {
+    ffmpeg: false,
+    pdf: false,
+};
+
 // --- FFmpeg Setup ---
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({
     log: true,
     corePath: "https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js",
 });
-let ffmpegReady = false;
-let selectedFile = null;
 
-// --- Conversion Mapping ---
-const conversionMap = {
+// --- PDF.js Setup ---
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.worker.min.js`;
+
+// =================================================================
+// ===== CORE CONVERSION ROUTER ====================================
+// =================================================================
+// This object maps file types to their specific conversion logic.
+const CONVERSION_HANDLERS = {
     image: {
-        label: "Image",
-        formats: ["png", "jpg", "webp", "bmp", "tiff"],
+        name: "Image",
+        handler: handleMediaConversion,
+        formats: ["png", "jpg", "webp", "bmp", "tiff", "ico"],
+        requires: "ffmpeg",
     },
     video: {
-        label: "Video",
-        formats: ["mp4", "webm", "mkv", "mov", "avi"],
+        name: "Video",
+        handler: handleMediaConversion,
+        formats: ["mp4", "webm", "mkv", "mov", "avi", "flv", "wmv", "gif"],
+        requires: "ffmpeg",
     },
     audio: {
-        label: "Audio",
-        formats: ["mp3", "wav", "ogg", "flac", "aac"],
+        name: "Audio",
+        handler: handleMediaConversion,
+        formats: ["mp3", "wav", "ogg", "flac", "aac", "wma"],
+        requires: "ffmpeg",
+    },
+    "application/pdf": {
+        name: "PDF Document",
+        handler: handlePdfConversion,
+        formats: ["png", "jpg"],
+        requires: "pdf",
+    },
+    "application/epub+zip": {
+        name: "eBook",
+        handler: handleEpubConversion,
+        formats: ["txt"],
+        requires: null, // JSZip is small and loads instantly
     },
 };
-
-// --- Functions ---
+// =================================================================
 
 /**
- * Loads the FFmpeg engine and updates the UI.
+ * Initializes the application and loads necessary libraries in the background.
  */
-async function loadFFmpeg() {
+async function initializeApp() {
     try {
         await ffmpeg.load();
-        ffmpegReady = true;
-        selectFileButton.style.display = "block";
-        ffmpegLoader.style.display = "none";
-        console.log("FFmpeg loaded successfully!");
-    } catch (error) {
-        console.error("Failed to load FFmpeg:", error);
-        ffmpegLoader.textContent =
-            "Error: Failed to load converter engine. Please refresh.";
+        libraryStatus.ffmpeg = true;
+        console.log("FFmpeg engine loaded.");
+        engineLoader.textContent = "Converter engines are ready!";
+    } catch (e) {
+        console.error("FFmpeg failed to load", e);
+        engineLoader.textContent = "Error: Media converter failed to load.";
     }
+    // PDF.js is also ready by this point
+    libraryStatus.pdf = true;
 }
 
 /**
@@ -69,25 +98,47 @@ function resetUI() {
     conversionControls.style.display = "none";
     progressContainer.style.display = "none";
     finishedState.style.display = "none";
+    dropArea.classList.remove("file-loaded");
 
-    fileInput.value = ""; // Clear the file input
+    fileInput.value = "";
     selectedFile = null;
-    dropArea.classList.remove("dragover-active");
+    currentHandler = null;
 }
 
 /**
- * Handles file selection from both drag-drop and file input.
- * @param {File} file The selected file object.
+ * Finds the correct handler for a given file.
+ * @param {File} file
+ * @returns {object|null} The handler object from CONVERSION_HANDLERS or null.
  */
-function handleFileSelect(file) {
-    if (!ffmpegReady || !file) return;
+function getHandlerForFile(file) {
+    // Check by exact MIME type first
+    if (file.type && CONVERSION_HANDLERS[file.type]) {
+        return CONVERSION_HANDLERS[file.type];
+    }
+    // Check by generic MIME type (e.g., 'image/png' -> 'image')
+    const genericType = file.type.split("/")[0];
+    if (genericType && CONVERSION_HANDLERS[genericType]) {
+        return CONVERSION_HANDLERS[genericType];
+    }
+    // Fallback to extension for files with weird MIME types
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (ext === "mkv") return CONVERSION_HANDLERS["video"];
+    return null;
+}
+
+/**
+ * Handles the initial selection of a file.
+ * @param {File} file
+ */
+async function handleFileSelect(file) {
+    if (!file) return;
 
     selectedFile = file;
-    const fileType = getFileType(file);
+    currentHandler = getHandlerForFile(file);
 
-    if (!fileType) {
+    if (!currentHandler) {
         alert(
-            "Unsupported file type. Please select an image, video, or audio file."
+            "Unsupported file type. Please select a supported media or document file."
         );
         resetUI();
         return;
@@ -95,61 +146,91 @@ function handleFileSelect(file) {
 
     // Update UI
     initialState.style.display = "none";
-    dropArea.classList.add("dragover-active");
-
-    // Show preview
-    displayPreview(file, fileType);
+    dropArea.classList.add("file-loaded");
     filePreview.style.display = "block";
 
+    // Show preview based on file type
+    await displayPreview(file, file.type);
+
     // Populate and show conversion options
-    populateFormatSelector(fileType, file.name.split(".").pop());
+    populateFormatSelector(currentHandler, file.name.split(".").pop());
     conversionControls.style.display = "flex";
 }
 
 /**
- * Determines the file type (image, video, audio).
- * @param {File} file
- * @returns {string|null} 'image', 'video', 'audio', or null
- */
-function getFileType(file) {
-    if (file.type.startsWith("image/")) return "image";
-    if (file.type.startsWith("video/")) return "video";
-    if (file.type.startsWith("audio/")) return "audio";
-    return null;
-}
-
-/**
  * Displays a preview of the selected file.
- * @param {File} file
- * @param {string} fileType
  */
-function displayPreview(file, fileType) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        let previewElement;
-        if (fileType === "image") {
-            previewElement = `<img src="${e.target.result}" alt="File preview">`;
-        } else if (fileType === "video") {
-            previewElement = `<video src="${e.target.result}" controls alt="File preview"></video>`;
-        } else if (fileType === "audio") {
-            previewElement = `<audio src="${e.target.result}" controls alt="File preview"></audio><p>${file.name}</p>`;
+async function displayPreview(file, mimeType) {
+    filePreview.innerHTML = ""; // Clear previous preview
+
+    if (
+        mimeType.startsWith("image/") ||
+        mimeType.startsWith("video/") ||
+        mimeType.startsWith("audio/")
+    ) {
+        const url = URL.createObjectURL(file);
+        let element;
+        if (mimeType.startsWith("image/")) {
+            element = document.createElement("img");
+        } else if (mimeType.startsWith("video/")) {
+            element = document.createElement("video");
+            element.controls = true;
+        } else {
+            element = document.createElement("audio");
+            element.controls = true;
+            const p = document.createElement("p");
+            p.textContent = file.name;
+            filePreview.appendChild(p);
         }
-        filePreview.innerHTML = previewElement;
-    };
-    reader.readAsDataURL(file);
+        element.src = url;
+        filePreview.appendChild(element);
+    } else if (mimeType === "application/pdf") {
+        const canvas = document.createElement("canvas");
+        filePreview.appendChild(canvas);
+        await renderPdfPreview(file, canvas);
+    } else {
+        const p = document.createElement("p");
+        p.textContent = `Preview not available for ${file.name}`;
+        filePreview.appendChild(p);
+    }
 }
 
 /**
- * Populates the format selector based on the file type.
- * @param {string} fileType 'image', 'video', or 'audio'
- * @param {string} originalExtension The original file extension
+ * Renders the first page of a PDF onto a canvas.
  */
-function populateFormatSelector(fileType, originalExtension) {
+async function renderPdfPreview(file, canvas) {
+    try {
+        const fileReader = new FileReader();
+        fileReader.onload = async function () {
+            const typedarray = new Uint8Array(this.result);
+            const pdf = await pdfjsLib.getDocument(typedarray).promise;
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const context = canvas.getContext("2d");
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            await page.render({ canvasContext: context, viewport: viewport })
+                .promise;
+        };
+        fileReader.readAsArrayBuffer(file);
+    } catch (e) {
+        console.error("PDF Preview Error:", e);
+        canvas.remove();
+        const p = document.createElement("p");
+        p.textContent = "Could not render PDF preview.";
+        filePreview.appendChild(p);
+    }
+}
+
+/**
+ * Populates the format selector based on the handler's options.
+ */
+function populateFormatSelector(handler, originalExtension) {
     formatSelect.innerHTML = "";
-    const formats = conversionMap[fileType].formats;
-    formats.forEach((format) => {
-        // Don't show option to convert to the same format
-        if (format.toLowerCase() !== originalExtension.toLowerCase()) {
+    const originalExtLower = originalExtension.toLowerCase();
+
+    handler.formats.forEach((format) => {
+        if (format !== originalExtLower) {
             const option = document.createElement("option");
             option.value = format;
             option.textContent = format.toUpperCase();
@@ -159,100 +240,148 @@ function populateFormatSelector(fileType, originalExtension) {
 }
 
 /**
- * Starts the conversion process.
+ * Main function called when the "Convert" button is clicked.
+ * Routes to the correct handler.
  */
 async function startConversion() {
-    if (!selectedFile) return;
+    if (!selectedFile || !currentHandler) return;
+
+    conversionControls.style.display = "none";
+    progressContainer.style.display = "block";
+
+    // Wait for required library if it's not ready
+    if (currentHandler.requires && !libraryStatus[currentHandler.requires]) {
+        progressText.textContent = `Waiting for ${currentHandler.requires} engine...`;
+        while (!libraryStatus[currentHandler.requires]) {
+            await new Promise((r) => setTimeout(r, 100));
+        }
+    }
+
+    progressBar.value = 0;
+    progressText.textContent = "Starting conversion...";
 
     const outputFormat = formatSelect.value;
-    const fileType = getFileType(selectedFile);
-    const outputFileName = `${selectedFile.name
+    try {
+        await currentHandler.handler(selectedFile, outputFormat);
+    } catch (error) {
+        console.error("Conversion failed:", error);
+        progressText.textContent = `Error: ${error.message}. Please try again.`;
+        progressBar.style.display = "none";
+    }
+}
+
+// --- Specific Conversion Handlers ---
+
+/**
+ * Handles all FFmpeg-based conversions (audio, video, image).
+ */
+async function handleMediaConversion(file, outputFormat) {
+    const outputFileName = `${file.name
         .split(".")
         .slice(0, -1)
         .join(".")}.${outputFormat}`;
 
-    // Update UI for conversion
-    conversionControls.style.display = "none";
-    progressContainer.style.display = "block";
-    progressBar.value = 0;
-    progressText.textContent = "Preparing file...";
-
-    if (fileType === "image") {
-        // Use Canvas for faster image conversion
-        await convertImageWithCanvas(
-            selectedFile,
-            outputFormat,
-            outputFileName
-        );
-    } else {
-        // Use FFmpeg for audio/video
-        await convertMediaWithFFmpeg(
-            selectedFile,
-            outputFormat,
-            outputFileName
-        );
-    }
-}
-
-/**
- * Converts image using the Canvas API.
- */
-async function convertImageWithCanvas(file, format, outputFileName) {
-    progressText.textContent = "Converting image...";
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-
-    const fileReader = new FileReader();
-    fileReader.onload = () => {
-        img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-
-            // Note: Canvas only supports a few formats natively.
-            const mimeType = `image/${format === "jpg" ? "jpeg" : format}`;
-            const dataUrl = canvas.toDataURL(mimeType, 0.9);
-
-            progressBar.value = 100;
-            showDownload(dataUrl, outputFileName);
-        };
-        img.src = fileReader.result;
-    };
-    fileReader.readAsDataURL(file);
-}
-
-/**
- * Converts audio/video using FFmpeg.
- */
-async function convertMediaWithFFmpeg(file, format, outputFileName) {
     ffmpeg.FS("writeFile", file.name, await fetchFile(file));
 
     ffmpeg.setProgress(({ ratio }) => {
-        const progress = Math.round(ratio * 100);
+        const progress = Math.min(100, Math.round(ratio * 100));
         progressBar.value = progress;
         progressText.textContent = `Converting... ${progress}%`;
     });
 
-    await ffmpeg.run("-i", file.name, outputFileName);
+    const command = ["-i", file.name];
+    if (outputFormat === "gif") {
+        command.push("-vf", "fps=15,scale=500:-1:flags=lanczos");
+    }
+    command.push(outputFileName);
+
+    await ffmpeg.run(...command);
 
     const data = ffmpeg.FS("readFile", outputFileName);
-    const blob = new Blob([data.buffer], {
-        type: `${getFileType(file)}/${format}`,
-    });
-    const url = URL.createObjectURL(blob);
+    const mimeType =
+        getHandlerForFile(file).name.toLowerCase() +
+        "/" +
+        (outputFormat === "jpg" ? "jpeg" : outputFormat);
+    const blob = new Blob([data.buffer], { type: mimeType });
 
-    showDownload(url, outputFileName);
+    showDownload(URL.createObjectURL(blob), outputFileName);
 
-    // Clean up filesystem
     ffmpeg.FS("unlink", file.name);
     ffmpeg.FS("unlink", outputFileName);
 }
 
 /**
+ * Handles PDF to Image conversion.
+ */
+async function handlePdfConversion(file, outputFormat) {
+    progressText.textContent = "Rendering PDF page...";
+    const outputFileName = `${file.name
+        .split(".")
+        .slice(0, -1)
+        .join(".")}.1.${outputFormat}`;
+
+    const fileData = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(fileData).promise;
+    // For this example, we convert the first page. A full implementation could loop through pages.
+    const page = await pdf.getPage(1);
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({ canvasContext: context, viewport: viewport }).promise;
+    progressBar.value = 100;
+    progressText.textContent = "Conversion complete!";
+
+    const dataUrl = canvas.toDataURL(`image/${outputFormat}`, 0.95);
+    showDownload(dataUrl, outputFileName);
+}
+
+/**
+ * Handles EPUB to TXT conversion.
+ */
+async function handleEpubConversion(file, outputFormat) {
+    progressText.textContent = "Extracting text from eBook...";
+    const zip = await JSZip.loadAsync(file);
+    let fullText = `Content from ${file.name}\n\n`;
+
+    // A simple regex to strip HTML tags
+    const stripHtml = (html) => {
+        let doc = new DOMParser().parseFromString(html, "text/html");
+        return doc.body.textContent || "";
+    };
+
+    const textPromises = [];
+    zip.forEach((relativePath, zipEntry) => {
+        // Look for common content files
+        if (zipEntry.name.match(/\.(xhtml|html)$/i)) {
+            textPromises.push(zipEntry.async("string"));
+        }
+    });
+
+    const htmlContents = await Promise.all(textPromises);
+    htmlContents.forEach((html) => {
+        fullText +=
+            stripHtml(html)
+                .replace(/[\r\n]+/g, "\n")
+                .trim() + "\n\n";
+        progressBar.value = (fullText.length / 10000) * 100; // Fake progress
+    });
+
+    progressText.textContent = "Conversion complete!";
+    progressBar.value = 100;
+
+    const blob = new Blob([fullText], { type: "text/plain" });
+    const outputFileName = `${file.name.split(".").slice(0, -1).join(".")}.txt`;
+    showDownload(URL.createObjectURL(blob), outputFileName);
+}
+
+// --- Finalization ---
+
+/**
  * Displays the final download link and reset button.
- * @param {string} url The data URL or object URL of the converted file.
- * @param {string} outputFileName The name for the downloaded file.
  */
 function showDownload(url, outputFileName) {
     progressContainer.style.display = "none";
@@ -265,17 +394,11 @@ function showDownload(url, outputFileName) {
 }
 
 // --- Event Listeners ---
-
-// Initial load
-window.onload = loadFFmpeg;
-
-// File selection button
+window.onload = initializeApp;
 selectFileButton.addEventListener("click", () => fileInput.click());
 fileInput.addEventListener("change", (event) =>
     handleFileSelect(event.target.files[0])
 );
-
-// Drag and drop
 dropArea.addEventListener("dragover", (event) => {
     event.preventDefault();
     dropArea.classList.add("dragover");
@@ -288,7 +411,5 @@ dropArea.addEventListener("drop", (event) => {
     dropArea.classList.remove("dragover");
     handleFileSelect(event.dataTransfer.files[0]);
 });
-
-// Action buttons
 convertBtn.addEventListener("click", startConversion);
 resetBtn.addEventListener("click", resetUI);

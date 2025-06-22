@@ -4,45 +4,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CnVrt - Modern File Converter</title>
+    <title>CnVrt - Universal File Converter</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <!-- FFmpeg -->
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
+
+    <!-- PDF Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
+
+    <!-- EPUB/ZIP Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 
 <body>
     <div class="container" id="drop-area">
-        <h1>CnVrt</h1>
-        <h2 id="subtitle">A simple, minimal, and private file converter.</h2>
+        <div class="content-wrapper">
+            <h1>CnVrt</h1>
+            <h2 id="subtitle">A versatile, private file converter for media and documents.</h2>
 
-        <div id="initial-state">
-            <p id="upload-instruction">Drag & drop a file or select one below</p>
-            <button id="select-file-btn" class="action-btn">Select File</button>
-            <p id="ffmpeg-loader">Loading converter engine...</p>
-        </div>
-
-        <input type="file" id="file-input"
-            accept=".webp, .jpg, .jpeg, .png, .gif, .bmp, .tiff, .webm, .mp4, .avi, .mov, .mkv, .flv, .wav, .m4a, .aac, .mp3, .flac, .ogg" />
-
-        <div class="file-preview" id="file-preview"></div>
-
-        <div id="conversion-controls" style="display: none;">
-            <div class="control-group">
-                <label for="format-select">Convert to:</label>
-                <select id="format-select"></select>
+            <!-- Initial State Content -->
+            <div id="initial-state">
+                <p id="upload-instruction">Drag & drop a file or select one below</p>
+                <button id="select-file-btn" class="action-btn">Select File</button>
+                <p id="engine-loader">Loading converter engines...</p>
             </div>
-            <button id="convert-btn" class="action-btn">Convert</button>
-        </div>
 
-        <div id="progress-container" style="display: none;">
-            <progress id="progress-bar" value="0" max="100"></progress>
-            <span id="progress-text"></span>
-        </div>
+            <input type="file" id="file-input" accept="
+                .jpg, .jpeg, .png, .gif, .bmp, .tiff, .webp, .svg, .ico,
+                .mp4, .mkv, .webm, .mov, .avi, .flv, .wmv, 
+                .mp3, .wav, .aac, .m4a, .ogg, .flac, .wma,
+                .pdf, .epub" />
 
-        <div id="finished-state" style="display: none;">
-            <p id="finished-text">Conversion complete!</p>
-            <a id="download-link" class="action-btn" download>Download File</a>
-            <button id="reset-btn" class="action-btn secondary">Convert Another File</button>
+            <!-- File Selected & Conversion State Content -->
+            <div class="file-preview" id="file-preview"></div>
+
+            <div id="conversion-controls" style="display: none;">
+                <div class="control-group">
+                    <label for="format-select">Convert to:</label>
+                    <select id="format-select"></select>
+                </div>
+                <button id="convert-btn" class="action-btn">Convert</button>
+            </div>
+
+            <div id="progress-container" style="display: none;">
+                <progress id="progress-bar" value="0" max="100"></progress>
+                <span id="progress-text"></span>
+            </div>
+
+            <!-- Finished State Content -->
+            <div id="finished-state" style="display: none;">
+                <p id="finished-text">Conversion complete!</p>
+                <a id="download-link" class="action-btn" download>Download File</a>
+                <button id="reset-btn" class="action-btn secondary">Convert Another File</button>
+            </div>
         </div>
     </div>
 

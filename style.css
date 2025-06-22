@@ -25,6 +25,12 @@
     box-sizing: border-box;
 }
 
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* Prevents scrollbars on the body */
+}
+
 body {
     background-color: var(--stone-950);
     color: var(--stone-200);
@@ -32,20 +38,17 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
     user-select: none;
     line-height: 1.6;
 }
 
 /* --- Main Container & States --- */
 .container {
+    width: 100%;
+    height: 100%;
     text-align: center;
     border: 3px dashed var(--stone-400);
-    border-radius: 16px;
-    padding: 40px;
-    width: 90%;
-    max-width: 600px;
-    min-height: 350px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -53,12 +56,17 @@ body {
     transition: background-color 0.3s, border-color 0.3s;
 }
 
+.content-wrapper {
+    max-width: 600px; /* Constrains content width but not the drop area */
+    width: 90%;
+}
+
 .container.dragover {
     border-color: var(--blue);
     background-color: var(--stone-900);
 }
 
-.container.dragover-active {
+.container.file-loaded {
     border-style: solid;
     border-color: var(--stone-800);
 }
@@ -111,15 +119,11 @@ h2 {
     background-color: var(--stone-500);
 }
 
-#select-file-btn {
-    display: none;
-    /* Hidden until FFmpeg loads */
-}
-
-#ffmpeg-loader {
+#engine-loader {
     font-style: italic;
     color: var(--stone-500);
     margin-top: 1rem;
+    height: 1em; /* Reserve space to prevent layout shift */
 }
 
 /* --- Conversion Controls --- */
@@ -159,14 +163,14 @@ select {
 }
 
 .file-preview img,
-.file-preview video {
+.file-preview video,
+.file-preview canvas { /* Added canvas for PDF preview */
     max-width: 100%;
     max-height: 250px;
     border-radius: 8px;
     border: 1px solid var(--stone-800);
     background-color: var(--stone-900);
 }
-
 .file-preview p {
     margin-top: 10px;
     color: var(--stone-300);
