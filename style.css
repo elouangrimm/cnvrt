@@ -6,48 +6,23 @@
     --stone-300: #d6d3d1;
     --stone-400: #a8a29e;
     --stone-500: #78716c;
-    --stone-600: #57534e;
-    --stone-700: #44403c;
     --stone-800: #292524;
     --stone-900: #1c1917;
     --stone-950: #0c0a09;
 
     /* colors */
-    --red: #ef4444;
-    --orange: #f97316;
-    --amber: #f59e0b;
-    --yellow: #eab308;
-    --lime: #84cc16;
-    --elouan-green: #7db84f;
-    /* Your custom green */
-    --green: #22c55e;
-    --emerald: #10b981;
-    --teal: #14b8a6;
-    --cyan: #06b6d4;
-    --sky: #0ea5e9;
     --blue: #3b82f6;
+    --green: #22c55e;
     --indigo: #6366f1;
-    --violet: #8b5cf6;
-    --purple: #a855f7;
-    --fuchsia: #d946ef;
-    --pink: #ec4899;
-    --rose: #f43f5e;
 
-    --font-sans: Inter, sans-serif;
-    --font-mono: 'JetBrains Mono', 'SF Mono', 'Roboto Mono', 'Cascadia Code',
-        monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* global styles */
+/* --- Global Styles --- */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
-
-*::selection {
-    background-color: var(--indigo);
-    color: var(--stone-600);
 }
 
 body {
@@ -62,86 +37,181 @@ body {
     line-height: 1.6;
 }
 
+/* --- Main Container & States --- */
 .container {
     text-align: center;
-    border: 2px dashed var(--stone-200);
+    border: 3px dashed var(--stone-400);
+    border-radius: 16px;
     padding: 40px;
-    width: 100%;
-    height: 100%;
+    width: 90%;
+    max-width: 600px;
+    min-height: 350px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.container.dragover {
+    border-color: var(--blue);
+    background-color: var(--stone-900);
+}
+
+.container.dragover-active {
+    border-style: solid;
+    border-color: var(--stone-800);
 }
 
 input[type="file"] {
     display: none;
 }
 
-.file-preview {
-    margin: 20px 0;
-    text-align: center;
+h1 {
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--stone-100);
+    margin-bottom: 0.25rem;
 }
 
-button {
-    --button-color: var(--blue);
-    margin: 10px;
-    padding: 10px;
+h2 {
+    font-size: 1.1rem;
+    color: var(--stone-400);
+    margin-bottom: 2rem;
+    font-weight: normal;
+}
+
+/* --- UI Controls & Buttons --- */
+.action-btn {
+    display: inline-block;
+    margin: 10px 5px;
+    padding: 12px 24px;
     border: none;
-    background-color: var(--button-color);
-    color: var(--stone-950);
-    font-size: 16px;
-    cursor: pointer;
-    outline: 2px solid var(--stone-800);
-}
-
-button:hover {
-    background-color: var(--green);
+    border-radius: 8px;
+    background-color: var(--blue);
     color: var(--stone-050);
-    outline: 2px solid var(--button-color);
-}
-
-button:focus {
-    outline: 2px solid var(--button-color);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
     text-decoration: none;
 }
 
-.dragover {
-    background-color: var(--stone-800);
+.action-btn:hover {
+    background-color: #5193f8;
+    transform: translateY(-2px);
 }
 
-#help-icon {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    cursor: pointer;
-    font-size: 24px;
+.action-btn.secondary {
+    background-color: var(--stone-800);
     color: var(--stone-200);
 }
 
-.modal {
+.action-btn.secondary:hover {
+    background-color: var(--stone-500);
+}
+
+#select-file-btn {
     display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    /* Hidden until FFmpeg loads */
 }
 
-.modal-content {
-    background-color: var(--stone-100);
-    color: var(--stone-900);
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid var(--stone-400);
-    width: 80%;
+#ffmpeg-loader {
+    font-style: italic;
+    color: var(--stone-500);
+    margin-top: 1rem;
 }
 
-.close-button {
+/* --- Conversion Controls --- */
+#conversion-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+label {
+    font-size: 1rem;
+    color: var(--stone-300);
+}
+
+select {
+    background-color: var(--stone-800);
+    color: var(--stone-100);
+    border: 1px solid var(--stone-500);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 1rem;
     cursor: pointer;
-    float: right;
-    font-size: 24px;
-    color: var(--stone-600);
+}
+
+/* --- File Preview --- */
+.file-preview {
+    margin: 20px 0;
+    max-width: 100%;
+}
+
+.file-preview img,
+.file-preview video {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 8px;
+    border: 1px solid var(--stone-800);
+    background-color: var(--stone-900);
+}
+
+.file-preview p {
+    margin-top: 10px;
+    color: var(--stone-300);
+    word-break: break-all;
+}
+
+/* --- Progress & Finished States --- */
+#progress-container {
+    width: 100%;
+    margin-top: 1.5rem;
+}
+
+progress {
+    width: 100%;
+    height: 12px;
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    border-radius: 10px;
+    background-color: var(--stone-800);
+}
+
+progress::-webkit-progress-bar {
+    background-color: var(--stone-800);
+    border-radius: 10px;
+}
+
+progress::-webkit-progress-value {
+    background-color: var(--green);
+    border-radius: 10px;
+    transition: width 0.3s ease-in-out;
+}
+
+#progress-text {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--stone-300);
+}
+
+#finished-state {
+    margin-top: 1rem;
+}
+
+#finished-text {
+    font-size: 1.25rem;
+    color: var(--green);
+    margin-bottom: 1rem;
 }
