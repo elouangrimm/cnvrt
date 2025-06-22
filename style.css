@@ -1,23 +1,70 @@
+:root {
+    /* b&w */
+    --stone-050: #fafaf9;
+    --stone-100: #f5f5f4;
+    --stone-200: #e7e5e4;
+    --stone-300: #d6d3d1;
+    --stone-400: #a8a29e;
+    --stone-500: #78716c;
+    --stone-600: #57534e;
+    --stone-700: #44403c;
+    --stone-800: #292524;
+    --stone-900: #1c1917;
+    --stone-950: #0c0a09;
+
+    /* colors */
+    --red: #ef4444;
+    --orange: #f97316;
+    --amber: #f59e0b;
+    --yellow: #eab308;
+    --lime: #84cc16;
+    --elouan-green: #7db84f;
+    /* Your custom green */
+    --green: #22c55e;
+    --emerald: #10b981;
+    --teal: #14b8a6;
+    --cyan: #06b6d4;
+    --sky: #0ea5e9;
+    --blue: #3b82f6;
+    --indigo: #6366f1;
+    --violet: #8b5cf6;
+    --purple: #a855f7;
+    --fuchsia: #d946ef;
+    --pink: #ec4899;
+    --rose: #f43f5e;
+
+    --font-sans: Inter, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Roboto Mono', 'Cascadia Code',
+        monospace;
+}
+
+/* global styles */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+*::selection {
+    background-color: var(--indigo);
+    color: var(--stone-600);
+}
+
 body {
-    background-color: #121212;
-    color: #ffffff;
-    font-family: Arial, sans-serif;
+    background-color: var(--stone-950);
+    color: var(--stone-200);
+    font-family: var(--font-sans);
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     user-select: none;
+    line-height: 1.6;
 }
 
 .container {
     text-align: center;
-    border: 2px dashed #ffffff;
+    border: 2px dashed var(--stone-200);
     border-radius: 8px;
     padding: 40px;
     width: 100%;
@@ -38,22 +85,31 @@ input[type="file"] {
 }
 
 button {
+    --button-color: var(--elouan-green);
     margin: 10px;
     padding: 10px;
     border: none;
     border-radius: 5px;
-    background-color: #7DB84F;
-    color: #ffffff;
+    background-color: var(--button-color);
+    color: var(--stone-950);
     font-size: 16px;
     cursor: pointer;
+    outline: 2px solid var(--stone-800);
 }
 
 button:hover {
-    background-color: #96ca6e;
+    background-color: var(--green);
+    color: var(--stone-050);
+    outline: 2px solid var(--button-color);
+}
+
+button:focus {
+    outline: 2px solid var(--button-color);
+    text-decoration: none;
 }
 
 .dragover {
-    background-color: #2b2b2b;
+    background-color: var(--stone-800);
 }
 
 #help-icon {
@@ -62,7 +118,7 @@ button:hover {
     right: 20px;
     cursor: pointer;
     font-size: 24px;
-    color: #ffffff;
+    color: var(--stone-200);
 }
 
 .modal {
@@ -77,15 +133,18 @@ button:hover {
 }
 
 .modal-content {
-    background-color: #fff;
+    background-color: var(--stone-100);
+    color: var(--stone-900);
     margin: 15% auto;
     padding: 20px;
-    border: 1px solid #888;
+    border: 1px solid var(--stone-400);
     width: 80%;
+    border-radius: 8px;
 }
 
 .close-button {
     cursor: pointer;
     float: right;
     font-size: 24px;
+    color: var(--stone-600);
 }
