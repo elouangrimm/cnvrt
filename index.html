@@ -8,16 +8,6 @@
     
     <!-- Core Media Engine -->
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
-    
-    <!-- Document Conversion Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.5.1/mammoth.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-    <!-- Archive Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tar-js@0.3.0/tar.min.js"></script>
 
 </head>
 <body>
@@ -34,11 +24,13 @@
             </div>
             
             <input type="file" id="file-input" accept="
-                .jpg, .jpeg, .png, .gif, .bmp, .tiff, .webp, .svg, .ico,
+                .jpg, .jpeg, .png, .gif, .bmp, .tiff, .webp, .svg, .ico, .heic, .heif, .psd,
                 .mp4, .mkv, .webm, .mov, .avi, .flv, .wmv, 
                 .mp3, .wav, .aac, .m4a, .ogg, .flac, .wma,
                 .pdf, .epub, .docx, .html, .txt,
-                .zip, .tar, .gz" />
+                .xlsx, .xls, .csv,
+                .zip, .tar, .gz,
+                .ttf, .otf, .woff, .woff2" />
 
             <!-- File Selected & Conversion State Content -->
             <div class="file-preview" id="file-preview"></div>
