@@ -135,25 +135,34 @@ h2 {
     margin-top: 1.5rem;
 }
 
-.control-group {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-label {
+.conversion-label {
+    margin-bottom: -0.5rem; /* Reduce gap between label and buttons */
     font-size: 1rem;
     color: var(--stone-300);
 }
 
-select {
-    background-color: var(--stone-800);
-    color: var(--stone-100);
+.format-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.format-btn {
+    padding: 10px 20px;
     border: 1px solid var(--stone-500);
     border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 1rem;
+    background-color: var(--stone-800);
+    color: var(--stone-100);
     cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.format-btn:hover {
+    background-color: var(--stone-500);
+    transform: translateY(-1px);
 }
 
 /* --- File Preview & Font Preview --- */
@@ -175,6 +184,12 @@ select {
     margin-top: 10px;
     color: var(--stone-300);
     word-break: break-all;
+}
+
+.preview-title {
+    font-weight: 600;
+    color: var(--stone-100);
+    margin-bottom: 10px;
 }
 
 /* --- Progress & Finished States --- */
