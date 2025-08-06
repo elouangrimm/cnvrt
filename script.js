@@ -6,8 +6,7 @@ const engineLoader = document.getElementById("engine-loader");
 const initialState = document.getElementById("initial-state");
 const filePreview = document.getElementById("file-preview");
 const conversionControls = document.getElementById("conversion-controls");
-const formatSelect = document.getElementById("format-select");
-const convertBtn = document.getElementById("convert-btn");
+const formatButtons = document.getElementById("format-buttons");
 const progressContainer = document.getElementById("progress-container");
 const progressBar = document.getElementById("progress-bar");
 const progressText = document.getElementById("progress-text");
@@ -163,20 +162,21 @@ async function handleFileSelect(file) {
 
 /** Populates the format selector based on the handler's options. */
 function populateFormatSelector(handler, originalExtension) {
-    formatSelect.innerHTML = '';
+    formatButtons.innerHTML = '';
     handler.formats.forEach(format => {
         if (format.toLowerCase() !== originalExtension.toLowerCase()) {
-            const option = document.createElement('option');
-            option.value = format;
-            option.textContent = format.toUpperCase();
-            formatSelect.appendChild(option);
+            const button = document.createElement('button');
+            button.className = 'format-btn';
+            button.dataset.format = format;
+            button.textContent = format.toUpperCase();
+            formatButtons.appendChild(button);
         }
     });
 }
 
 /** Main function called when the "Convert" button is clicked. */
-async function startConversion() {
-    if (!selectedFile || !currentHandler) return;
+async function startConversion(outputFormat) {
+    if (!selectedFile || !currentHandler || !outputFormat) return;
     
     conversionControls.style.display = 'none';
     progressContainer.style.display = 'block';
@@ -192,7 +192,7 @@ async function startConversion() {
     progressText.textContent = 'Starting conversion...';
     
     try {
-        await currentHandler.handler(selectedFile, formatSelect.value, false); // Call handler in "convert mode"
+        await currentHandler.handler(selectedFile, outputFormat, false); // Call handler in "convert mode"
     } catch (error) {
         console.error("Conversion failed:", error);
         progressText.textContent = `Error: ${error.message}. Please try again.`;
@@ -202,11 +202,28 @@ async function startConversion() {
 /** Displays the final download link and reset button. */
 function showDownload(blobOrUrl, outputFileName) {
     const url = (blobOrUrl instanceof Blob) ? URL.createObjectURL(blobOrUrl) : blobOrUrl;
+
+    // Show a preview for image types
+    const extension = outputFileName.split('.').pop().toLowerCase();
+    const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'ico'];
+    if (imageExtensions.includes(extension)) {
+        filePreview.innerHTML = `<p class="preview-title">Converted Image:</p><img src="${url}" alt="Converted Image Preview">`;
+        filePreview.style.display = 'block';
+    } else {
+        // For non-image types, we could show a generic success message in the preview area
+        filePreview.innerHTML = `<p class="preview-title">File ready for download.</p>`;
+        filePreview.style.display = 'block';
+    }
+
     progressContainer.style.display = 'none';
     downloadLink.href = url;
     downloadLink.download = outputFileName;
     finishedState.style.display = 'block';
-    downloadLink.click();
+
+    // A brief delay can sometimes help ensure the preview renders before the download prompt appears.
+    setTimeout(() => {
+        downloadLink.click();
+    }, 100);
 }
 
 // =================================================================
@@ -555,5 +572,20 @@ dropArea.addEventListener("drop", (event) => {
     dropArea.classList.remove("dragover");
     handleFileSelect(event.dataTransfer.files[0]);
 });
-convertBtn.addEventListener('click', startConversion);
 resetBtn.addEventListener('click', resetUI);
+
+formatButtons.addEventListener('click', (event) => {
+    if (event.target.classList.contains('format-btn')) {
+        const format = event.target.dataset.format;
+        startConversion(format);
+    }
+});
+
+window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        // Check if the app is not in its initial state
+        if (initialState.style.display === 'none') {
+            resetUI();
+        }
+    }
+});
