@@ -112,7 +112,7 @@ h2 {
     margin: 10px 5px;
     padding: 12px 24px;
     border: none;
-    border-radius: 8px;
+    border-radius: 0;
     background-color: var(--blue);
     color: var(--stone-050);
     font-size: 16px;
@@ -168,7 +168,7 @@ h2 {
 .format-btn {
     padding: 10px 20px;
     border: 1px solid var(--stone-500);
-    border-radius: 6px;
+    border-radius: 0;
     background-color: var(--stone-800);
     color: var(--stone-100);
     cursor: pointer;
