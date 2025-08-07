@@ -83,7 +83,7 @@ const CDN_URLS = {
     html2pdf: 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
     jszip: 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
     pako: 'https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js',
-    tar: 'https://cdn.jsdelivr.net/npm/tar-js@0.3.0/tar.min.js',
+    tar: 'https://cdn.jsdelivr.net/npm/tar-js@0.3.0/lib/tar.js',
     sheetjs: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
     heic2any: 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.3/heic2any.min.js',
     psd: 'https://cdn.jsdelivr.net/npm/psd.js@3.2.0/dist/psd.min.js',
@@ -310,8 +310,8 @@ async function handleMediaConversion(file, outputFormat, isPreview) {
         let element;
         if (type === 'image') element = `<img src="${url}" alt="Preview">`;
         else if (type === 'video') element = `<video src="${url}" controls alt="Preview"></video>`;
-        else element = `<audio src="${url}" controls alt="Preview"></audio><p>${file.name}</p>`;
-        filePreview.innerHTML = element;
+        else element = `<audio src="${url}" controls alt="Preview"></audio>`;
+        filePreview.innerHTML = `${element}<p>${file.name}</p>`;
         return;
     }
     // Conversion logic...
@@ -353,7 +353,7 @@ async function handleSvgConversion(file, outputFormat, isPreview) {
     reader.onload = (e) => {
         const dataUrl = e.target.result;
         if (isPreview) {
-            filePreview.innerHTML = `<img src="${dataUrl}" alt="SVG Preview">`;
+            filePreview.innerHTML = `<img src="${dataUrl}" alt="SVG Preview"><p>${file.name}</p>`;
             return;
         }
         const canvas = document.createElement('canvas');
@@ -376,7 +376,7 @@ async function handleSvgConversion(file, outputFormat, isPreview) {
 /** Handles DOCX conversions. */
 async function handleDocxConversion(file, outputFormat, isPreview) {
     if (isPreview) {
-        filePreview.innerHTML = `<p>DOCX Preview not available. Ready to convert.</p>`;
+        filePreview.innerHTML = `<p>DOCX Preview not available. Ready to convert.</p><p>${file.name}</p>`;
         return;
     }
 
@@ -424,6 +424,7 @@ async function handlePdfConversion(file, outputFormat, isPreview) {
         canvas.width = viewport.width;
         await page.render({ canvasContext: context, viewport: viewport }).promise;
         filePreview.appendChild(canvas);
+        filePreview.innerHTML += `<p>${file.name}</p>`;
         return;
     }
 
@@ -453,7 +454,7 @@ async function handlePdfConversion(file, outputFormat, isPreview) {
 async function handleHtmlConversion(file, outputFormat, isPreview) {
     const html = await file.text();
     if (isPreview) {
-        filePreview.innerHTML = `<p>HTML file loaded. Ready to convert.</p>`;
+        filePreview.innerHTML = `<p>HTML file loaded. Ready to convert.</p><p>${file.name}</p>`;
         return;
     }
     if (outputFormat === 'txt') {
@@ -576,7 +577,7 @@ async function handleHeicConversion(file, outputFormat, isPreview) {
     const url = URL.createObjectURL(blob);
 
     if (isPreview) {
-        filePreview.innerHTML = `<img src="${url}" alt="HEIC Preview">`;
+        filePreview.innerHTML = `<img src="${url}" alt="HEIC Preview"><p>${file.name}</p>`;
         return;
     }
 
@@ -594,7 +595,7 @@ async function handlePsdConversion(file, outputFormat, isPreview) {
     const pngUrl = canvas.toDataURL('image/png');
 
     if (isPreview) {
-        filePreview.innerHTML = `<img src="${pngUrl}" alt="PSD Preview">`;
+        filePreview.innerHTML = `<img src="${pngUrl}" alt="PSD Preview"><p>${file.name}</p>`;
         return;
     }
 
@@ -635,6 +636,7 @@ async function handleFontConversion(file, outputFormat, isPreview) {
 
         filePreview.innerHTML = '';
         filePreview.appendChild(canvas);
+        filePreview.innerHTML += `<p>${file.name}</p>`;
         return;
     }
 
