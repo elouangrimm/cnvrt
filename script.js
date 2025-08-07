@@ -22,15 +22,15 @@ const resetBtn = document.getElementById("reset-btn");
 // --- UI Text ---
 const UI_TEXT = {
     engineReady: [
-        "Converter engines revving up... Vroom vroom!",
-        "Our hamsters are awake and ready to convert.",
-        "The conversion matrix has been loaded.",
-        "All systems go! Or... all systems convert!",
-        "Ready to transmogrify your files.",
-        "Compiling dependencies... just kidding, it's all client-side.",
-        "Initializing... 4 8 15 16 23 42",
-        "There is no spoon... but we can convert your file.",
-        "I use Arch BTW. And I'm ready to convert."
+        { loading: "Revving converter engines...", loaded: "Engines are revved!" },
+        { loading: "Waking up the hamsters...", loaded: "The hamsters are ready for their wheel." },
+        { loading: "Loading the conversion matrix...", loaded: "The matrix has you." },
+        { loading: "Initializing all systems...", loaded: "All systems go! Or... all systems convert!" },
+        { loading: "Transmogrifying files...", loaded: "Ready to transmogrify." },
+        { loading: "Compiling dependencies...", loaded: "Just kidding, it's all client-side." },
+        { loading: "Initializing... 4 8 15 16 23 42", loaded: "We have to go back!" },
+        { loading: "Bending the spoon...", loaded: "There is no spoon, but we can convert your file." },
+        { loading: "Updating Arch packages...", loaded: "I use Arch BTW. And I'm ready to convert." }
     ],
     conversionLabel: [
         "What's its final form?",
@@ -149,11 +149,13 @@ const CONVERSION_HANDLERS = {
 
 /** Initializes the application and loads necessary libraries. */
 async function initializeApp() {
+    const loadingMessage = getRandomString(UI_TEXT.engineReady);
+    engineLoader.textContent = loadingMessage.loading;
     try {
         await ffmpeg.load();
         libraryStatus.ffmpeg = true;
         console.log("FFmpeg engine loaded.");
-        engineLoader.textContent = getRandomString(UI_TEXT.engineReady);
+        engineLoader.textContent = loadingMessage.loaded;
     } catch (e) {
         console.error("FFmpeg failed to load", e);
         engineLoader.textContent = 'Error: Media converter failed to load.';
@@ -302,7 +304,7 @@ async function handleMediaConversion(file, outputFormat, isPreview) {
     if (isPreview) {
         const extension = file.name.split('.').pop().toLowerCase();
         if (extension === 'ico') {
-            filePreview.innerHTML = `<p>ICO previews are not displayed.</p>`;
+            filePreview.innerHTML = ''; // Show nothing
             return;
         }
         const url = URL.createObjectURL(file);

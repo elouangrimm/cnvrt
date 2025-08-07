@@ -83,13 +83,12 @@ h1 {
 }
 
 h1, #subtitle {
-    transition: opacity 0.5s ease-in-out;
+    transition: opacity 0.3s ease-in-out;
 }
 
 h1.fade-out, #subtitle.fade-out {
     opacity: 0;
-    height: 0;
-    margin: 0;
+    pointer-events: none;
 }
 
 h2 {
@@ -100,9 +99,11 @@ h2 {
 }
 
 #funny-subtitle {
-    color: var(--indigo);
-    font-size: 1.2rem;
-    transition: opacity 0.5s ease-in-out;
+    color: var(--stone-100);
+    font-size: 1.5rem;
+    font-weight: 600;
+    transition: opacity 0.3s ease-in-out;
+    margin-bottom: 2rem;
 }
 
 /* --- UI Controls & Buttons --- */
