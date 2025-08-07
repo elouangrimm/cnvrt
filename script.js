@@ -21,7 +21,7 @@ const resetBtn = document.getElementById("reset-btn");
 
 const UI_TEXT = {
     engineReady: [
-        { loading: "Revving converter engines...", loaded: "Engines have been thouroghly revved!" },
+        { loading: "Revving converter engines...", loaded: "Engines have been thoroughly revved!" },
         { loading: "Waking up the hamsters...", loaded: "The hamsters are ready for their wheel." },
         { loading: "Loading the conversion matrix...", loaded: "The matrix has you." },
         { loading: "Initializing all systems...", loaded: "All systems go! Or... all systems convert!" },
