@@ -19,18 +19,18 @@ const finishedText = document.getElementById("finished-text");
 const downloadLink = document.getElementById("download-link");
 const resetBtn = document.getElementById("reset-btn");
 
-// --- UI Text ---
 const UI_TEXT = {
     engineReady: [
-        { loading: "Revving converter engines...", loaded: "Engines are revved!" },
+        { loading: "Revving converter engines...", loaded: "Engines have been thouroghly revved!" },
         { loading: "Waking up the hamsters...", loaded: "The hamsters are ready for their wheel." },
         { loading: "Loading the conversion matrix...", loaded: "The matrix has you." },
         { loading: "Initializing all systems...", loaded: "All systems go! Or... all systems convert!" },
         { loading: "Transmogrifying files...", loaded: "Ready to transmogrify." },
         { loading: "Compiling dependencies...", loaded: "Just kidding, it's all client-side." },
         { loading: "Initializing... 4 8 15 16 23 42", loaded: "We have to go back!" },
-        { loading: "Bending the spoon...", loaded: "There is no spoon, but we can convert your file." },
-        { loading: "Updating Arch packages...", loaded: "I use Arch BTW. And I'm ready to convert." }
+        { loading: "git clone https://nothing.at.all/", loaded: "Resolving deltas: 100% (69/69), done." },
+        { loading: "git clone https://absolutely.nothing/", loaded: "Resolving deltas: 100% (420/420), done." },
+        { loading: "Updating Arch btw packages...", loaded: "Arch btw is ready to convert!" }
     ],
     conversionLabel: [
         "What's its final form?",
@@ -40,7 +40,7 @@ const UI_TEXT = {
         "Pick your poison:",
         "Select target platform:",
         "Choose your new file's class:",
-        "What should we `git checkout` to?",
+        "What should we git checkout to?",
         "Pipe to:"
     ],
     postUpload: [
@@ -49,7 +49,6 @@ const UI_TEXT = {
         "Your file is safe with us. Now, choose its fate.",
         "Okay, it's loaded. Let the conversion commence!",
         "The file has landed. Pick a new format for it.",
-        "One does not simply walk into Mordor... but you can drag and drop a file.",
         "It's dangerous to go alone! Take this converted file.",
         "Hello, world! Your file, that is."
     ],
@@ -61,7 +60,8 @@ const UI_TEXT = {
         "Presto change-o! Your file is ready.",
         "Segmentation fault... just kidding, it worked!",
         "0 errors, 0 warnings, 1 new file.",
-        "Achievement Unlocked: File Converted."
+        "Achievement Unlocked: File Converted.",
+        "POST https://thatwas.quick net::ERR_BLOCKED_BY_CLIENT"
     ]
 };
 
@@ -167,6 +167,7 @@ function resetUI() {
     mainTitle.classList.remove('fade-out');
     subtitle.classList.remove('fade-out');
     funnySubtitle.style.display = 'none';
+    progressBar.style.display = 'block';
 
     initialState.style.display = 'block';
     filePreview.style.display = 'none';
@@ -256,6 +257,7 @@ async function startConversion(outputFormat) {
         }
     }
     
+    progressBar.style.display = 'block';
     progressBar.value = 0;
     progressText.textContent = 'Starting conversion...';
     
@@ -263,7 +265,8 @@ async function startConversion(outputFormat) {
         await currentHandler.handler(selectedFile, outputFormat, false); // Call handler in "convert mode"
     } catch (error) {
         console.error("Conversion failed:", error);
-        progressText.textContent = `Error: ${error.message}. Please try again.`;
+        progressBar.style.display = 'none';
+        progressText.innerHTML = `<strong>Conversion Failed!</strong><br><small>${error.message}</small>`;
     }
 }
 
@@ -302,11 +305,6 @@ function showDownload(blobOrUrl, outputFileName) {
 /** Handles all FFmpeg-based conversions (audio, video, image). */
 async function handleMediaConversion(file, outputFormat, isPreview) {
     if (isPreview) {
-        const extension = file.name.split('.').pop().toLowerCase();
-        if (extension === 'ico') {
-            filePreview.innerHTML = ''; // Show nothing
-            return;
-        }
         const url = URL.createObjectURL(file);
         const type = file.type.split('/')[0];
         let element;
@@ -324,13 +322,29 @@ async function handleMediaConversion(file, outputFormat, isPreview) {
         progressText.textContent = `Converting... ${progressBar.value}%`;
     });
     const command = ['-i', file.name];
-    if (outputFormat === 'gif') command.push('-vf', 'fps=15,scale=500:-1:flags=lanczos');
+    if (outputFormat === 'gif') {
+        command.push('-vf', 'fps=15,scale=500:-1:flags=lanczos');
+    } else if (outputFormat === 'ico') {
+        command.push('-vf', 'scale=256:256');
+    }
     command.push(outputFileName);
     await ffmpeg.run(...command);
-    const data = ffmpeg.FS('readFile', outputFileName);
-    showDownload(new Blob([data.buffer]), outputFileName);
-    ffmpeg.FS('unlink', file.name);
-    ffmpeg.FS('unlink', outputFileName);
+
+    // Check if the output file was actually created
+    try {
+        const data = ffmpeg.FS('readFile', outputFileName);
+        showDownload(new Blob([data.buffer]), outputFileName);
+    } catch (e) {
+        throw new Error(`Conversion failed: Output file "${outputFileName}" not found.`);
+    } finally {
+        // Cleanup files
+        ffmpeg.FS('unlink', file.name);
+        try {
+            ffmpeg.FS('unlink', outputFileName);
+        } catch (e) {
+            // Ignore errors unlinking the output file, it might not exist if conversion failed
+        }
+    }
 }
 
 /** Handles SVG to raster image conversion. */
