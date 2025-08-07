@@ -4,15 +4,71 @@ const fileInput = document.getElementById("file-input");
 const selectFileButton = document.getElementById("select-file-btn");
 const engineLoader = document.getElementById("engine-loader");
 const initialState = document.getElementById("initial-state");
+const mainTitle = document.querySelector('h1');
+const subtitle = document.getElementById('subtitle');
+const funnySubtitle = document.getElementById('funny-subtitle');
 const filePreview = document.getElementById("file-preview");
 const conversionControls = document.getElementById("conversion-controls");
+const conversionLabel = document.querySelector('.conversion-label');
 const formatButtons = document.getElementById("format-buttons");
 const progressContainer = document.getElementById("progress-container");
 const progressBar = document.getElementById("progress-bar");
 const progressText = document.getElementById("progress-text");
 const finishedState = document.getElementById("finished-state");
+const finishedText = document.getElementById("finished-text");
 const downloadLink = document.getElementById("download-link");
 const resetBtn = document.getElementById("reset-btn");
+
+// --- UI Text ---
+const UI_TEXT = {
+    engineReady: [
+        "Converter engines revving up... Vroom vroom!",
+        "Our hamsters are awake and ready to convert.",
+        "The conversion matrix has been loaded.",
+        "All systems go! Or... all systems convert!",
+        "Ready to transmogrify your files.",
+        "Compiling dependencies... just kidding, it's all client-side.",
+        "Initializing... 4 8 15 16 23 42",
+        "There is no spoon... but we can convert your file.",
+        "I use Arch BTW. And I'm ready to convert."
+    ],
+    conversionLabel: [
+        "What's its final form?",
+        "Choose its destiny:",
+        "Let's make it a...",
+        "And for its next trick, it'll become a...",
+        "Pick your poison:",
+        "Select target platform:",
+        "Choose your new file's class:",
+        "What should we `git checkout` to?",
+        "Pipe to:"
+    ],
+    postUpload: [
+        "Alright, what are we turning this thing into?",
+        "File's in. Now for the magic part.",
+        "Your file is safe with us. Now, choose its fate.",
+        "Okay, it's loaded. Let the conversion commence!",
+        "The file has landed. Pick a new format for it.",
+        "One does not simply walk into Mordor... but you can drag and drop a file.",
+        "It's dangerous to go alone! Take this converted file.",
+        "Hello, world! Your file, that is."
+    ],
+    conversionComplete: [
+        "Voila! All done.",
+        "And... it's a new file!",
+        "Success! Another one bites the dust.",
+        "Conversion complete. That was easy.",
+        "Presto change-o! Your file is ready.",
+        "Segmentation fault... just kidding, it worked!",
+        "0 errors, 0 warnings, 1 new file.",
+        "Achievement Unlocked: File Converted."
+    ]
+};
+
+function getRandomString(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
 
 // --- Global State ---
 let selectedFile = null;
@@ -97,7 +153,7 @@ async function initializeApp() {
         await ffmpeg.load();
         libraryStatus.ffmpeg = true;
         console.log("FFmpeg engine loaded.");
-        engineLoader.textContent = 'Converter engines are ready!';
+        engineLoader.textContent = getRandomString(UI_TEXT.engineReady);
     } catch (e) {
         console.error("FFmpeg failed to load", e);
         engineLoader.textContent = 'Error: Media converter failed to load.';
@@ -106,6 +162,10 @@ async function initializeApp() {
 
 /** Resets the entire UI to its initial state. */
 function resetUI() {
+    mainTitle.classList.remove('fade-out');
+    subtitle.classList.remove('fade-out');
+    funnySubtitle.style.display = 'none';
+
     initialState.style.display = 'block';
     filePreview.style.display = 'none';
     filePreview.innerHTML = '';
@@ -148,6 +208,11 @@ async function handleFileSelect(file) {
         return;
     }
 
+    mainTitle.classList.add('fade-out');
+    subtitle.classList.add('fade-out');
+    funnySubtitle.textContent = getRandomString(UI_TEXT.postUpload);
+    funnySubtitle.style.display = 'block';
+
     initialState.style.display = 'none';
     dropArea.classList.add('file-loaded');
     filePreview.style.display = 'block';
@@ -156,6 +221,7 @@ async function handleFileSelect(file) {
 
     if (currentHandler.formats.length > 0) {
         populateFormatSelector(currentHandler, file.name.split('.').pop());
+        conversionLabel.textContent = getRandomString(UI_TEXT.conversionLabel);
         conversionControls.style.display = 'flex';
     }
 }
@@ -216,6 +282,7 @@ function showDownload(blobOrUrl, outputFileName) {
     }
 
     progressContainer.style.display = 'none';
+    finishedText.textContent = getRandomString(UI_TEXT.conversionComplete);
     downloadLink.href = url;
     downloadLink.download = outputFileName;
     finishedState.style.display = 'block';
@@ -233,6 +300,11 @@ function showDownload(blobOrUrl, outputFileName) {
 /** Handles all FFmpeg-based conversions (audio, video, image). */
 async function handleMediaConversion(file, outputFormat, isPreview) {
     if (isPreview) {
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (extension === 'ico') {
+            filePreview.innerHTML = `<p>ICO previews are not displayed.</p>`;
+            return;
+        }
         const url = URL.createObjectURL(file);
         const type = file.type.split('/')[0];
         let element;
