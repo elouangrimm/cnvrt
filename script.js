@@ -19,6 +19,15 @@ const finishedText = document.getElementById("finished-text");
 const downloadLink = document.getElementById("download-link");
 const resetBtn = document.getElementById("reset-btn");
 
+// Resize Controls
+const resizeControls = document.getElementById("resize-controls");
+const resizeEnable = document.getElementById("resize-enable");
+const resizeInputs = document.getElementById("resize-inputs");
+const resizeWidth = document.getElementById("resize-width");
+const resizeHeight = document.getElementById("resize-height");
+const resizeLockBtn = document.getElementById("resize-lock-btn");
+const resizePixelArt = document.getElementById("resize-pixel-art");
+
 const UI_TEXT = {
     engineReady: [
         { loading: "Revving converter engines...", loaded: "Engines have been thoroughly revved!" },
@@ -74,6 +83,8 @@ function getRandomString(arr) {
 let selectedFile = null;
 let currentHandler = null;
 const libraryStatus = { ffmpeg: false };
+let originalAspectRatio = 0;
+let isAspectRatioLocked = true;
 
 // --- Library Management ---
 const CDN_URLS = {
@@ -179,6 +190,17 @@ function resetUI() {
     fileInput.value = '';
     selectedFile = null;
     currentHandler = null;
+
+    // Reset Resize Controls
+    resizeControls.style.display = 'none';
+    resizeEnable.checked = false;
+    resizeInputs.classList.add('disabled');
+    resizeWidth.value = '';
+    resizeHeight.value = '';
+    resizePixelArt.checked = false;
+    resizeWidth.disabled = true;
+    resizeHeight.disabled = true;
+    resizePixelArt.disabled = true;
 }
 
 /** Finds the correct handler for a given file. */
@@ -222,11 +244,30 @@ async function handleFileSelect(file) {
 
     await currentHandler.handler(file, null, true); // Call handler in "preview mode"
 
+    // Setup resize controls if it's an image supported by FFmpeg
+    if (currentHandler === CONVERSION_HANDLERS['image']) {
+        setupResizeControls(file);
+    } else {
+        resizeControls.style.display = 'none';
+    }
+
     if (currentHandler.formats.length > 0) {
         populateFormatSelector(currentHandler, file.name.split('.').pop());
         conversionLabel.textContent = getRandomString(UI_TEXT.conversionLabel);
         conversionControls.style.display = 'flex';
     }
+}
+
+/** Sets up the resize controls for an image file. */
+function setupResizeControls(file) {
+    const img = new Image();
+    img.onload = () => {
+        resizeWidth.value = img.width;
+        resizeHeight.value = img.height;
+        originalAspectRatio = img.width / img.height;
+        resizeControls.style.display = 'flex';
+    };
+    img.src = URL.createObjectURL(file);
 }
 
 /** Populates the format selector based on the handler's options. */
@@ -246,21 +287,21 @@ function populateFormatSelector(handler, originalExtension) {
 /** Main function called when the "Convert" button is clicked. */
 async function startConversion(outputFormat) {
     if (!selectedFile || !currentHandler || !outputFormat) return;
-    
+
     conversionControls.style.display = 'none';
     progressContainer.style.display = 'block';
 
     if (currentHandler.requires && !libraryStatus[currentHandler.requires]) {
         progressText.textContent = `Waiting for ${currentHandler.requires} engine...`;
-        while(!libraryStatus[currentHandler.requires]) {
+        while (!libraryStatus[currentHandler.requires]) {
             await new Promise(r => setTimeout(r, 100));
         }
     }
-    
+
     progressBar.style.display = 'block';
     progressBar.value = 0;
     progressText.textContent = 'Starting conversion...';
-    
+
     try {
         await currentHandler.handler(selectedFile, outputFormat, false); // Call handler in "convert mode"
     } catch (error) {
@@ -322,11 +363,38 @@ async function handleMediaConversion(file, outputFormat, isPreview) {
         progressText.textContent = `Converting... ${progressBar.value}%`;
     });
     const command = ['-i', file.name];
-    if (outputFormat === 'gif') {
-        command.push('-vf', 'fps=15,scale=500:-1:flags=lanczos');
-    } else if (outputFormat === 'ico') {
-        command.push('-vf', 'scale=256:256');
+
+    // Handle Resizing
+    let vfFilters = [];
+
+    if (resizeEnable.checked && resizeWidth.value && resizeHeight.value) {
+        let scaleFilter = `scale=${resizeWidth.value}:${resizeHeight.value}`;
+
+        if (resizePixelArt.checked) {
+            // For pixel art: neighboring sampling for scaling up
+            // ffmpeg flag: -sws_flags neighbor
+            // or via scale filter flags
+            scaleFilter += ":flags=neighbor";
+        }
+        vfFilters.push(scaleFilter);
     }
+
+    if (outputFormat === 'gif') {
+        if (!resizeEnable.checked) {
+            vfFilters.push('fps=15,scale=500:-1:flags=lanczos');
+        } else {
+            vfFilters.push('fps=15'); // Just fps, keep user scale
+        }
+    } else if (outputFormat === 'ico') {
+        if (!resizeEnable.checked) {
+            vfFilters.push('scale=256:256');
+        }
+    }
+
+    if (vfFilters.length > 0) {
+        command.push('-vf', vfFilters.join(','));
+    }
+
     command.push(outputFileName);
     await ffmpeg.run(...command);
 
@@ -414,7 +482,7 @@ async function handlePdfConversion(file, outputFormat, isPreview) {
 
     const fileData = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument(fileData).promise;
-    
+
     if (isPreview) {
         const page = await pdf.getPage(1);
         const canvas = document.createElement('canvas');
@@ -436,7 +504,7 @@ async function handlePdfConversion(file, outputFormat, isPreview) {
             fullText += textContent.items.map(item => item.str).join(' ');
             progressBar.value = (i / pdf.numPages) * 100;
         }
-        showDownload(new Blob([fullText], {type: 'text/plain'}), `${file.name}.txt`);
+        showDownload(new Blob([fullText], { type: 'text/plain' }), `${file.name}.txt`);
     } else { // png or jpg
         const page = await pdf.getPage(1); // Convert first page
         const canvas = document.createElement('canvas');
@@ -663,6 +731,50 @@ dropArea.addEventListener("drop", (event) => {
     handleFileSelect(event.dataTransfer.files[0]);
 });
 resetBtn.addEventListener('click', resetUI);
+
+// Resize UI Event Listeners
+resizeEnable.addEventListener('change', (e) => {
+    if (e.target.checked) {
+        resizeInputs.classList.remove('disabled');
+        resizeWidth.disabled = false;
+        resizeHeight.disabled = false;
+        resizePixelArt.disabled = false;
+    } else {
+        resizeInputs.classList.add('disabled');
+        resizeWidth.disabled = true;
+        resizeHeight.disabled = true;
+        resizePixelArt.disabled = true;
+    }
+});
+
+resizeLockBtn.addEventListener('click', () => {
+    isAspectRatioLocked = !isAspectRatioLocked;
+    if (isAspectRatioLocked) {
+        resizeLockBtn.classList.add('active');
+        resizeLockBtn.innerHTML = '🔒';
+        resizeLockBtn.title = "Unlock Aspect Ratio";
+        // Re-sync height to current width
+        if (resizeWidth.value) {
+            resizeHeight.value = Math.round(resizeWidth.value / originalAspectRatio);
+        }
+    } else {
+        resizeLockBtn.classList.remove('active');
+        resizeLockBtn.innerHTML = '🔓';
+        resizeLockBtn.title = "Lock Aspect Ratio";
+    }
+});
+
+resizeWidth.addEventListener('input', () => {
+    if (isAspectRatioLocked && resizeWidth.value && originalAspectRatio) {
+        resizeHeight.value = Math.round(resizeWidth.value / originalAspectRatio);
+    }
+});
+
+resizeHeight.addEventListener('input', () => {
+    if (isAspectRatioLocked && resizeHeight.value && originalAspectRatio) {
+        resizeWidth.value = Math.round(resizeHeight.value * originalAspectRatio);
+    }
+});
 
 formatButtons.addEventListener('click', (event) => {
     if (event.target.classList.contains('format-btn')) {
