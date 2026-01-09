@@ -78,6 +78,22 @@ function getRandomString(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/** Helper to get MIME type from extension */
+function getMimeType(extension) {
+    const map = {
+        'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+        'gif': 'image/gif', 'webp': 'image/webp', 'bmp': 'image/bmp',
+        'tiff': 'image/tiff', 'ico': 'image/x-icon', 'svg': 'image/svg+xml',
+        'pdf': 'application/pdf', 'txt': 'text/plain', 'html': 'text/html',
+        'json': 'application/json', 'csv': 'text/csv', 'xml': 'text/xml',
+        'zip': 'application/zip', 'tar': 'application/x-tar', 'gz': 'application/gzip',
+        'mp4': 'video/mp4', 'webm': 'video/webm', 'mp3': 'audio/mpeg', 'wav': 'audio/wav',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    };
+    return map[extension.toLowerCase()] || 'application/octet-stream';
+}
+
 
 // --- Global State ---
 let selectedFile = null;
@@ -270,17 +286,26 @@ function setupResizeControls(file) {
     img.src = URL.createObjectURL(file);
 }
 
-/** Populates the format selector based on the handler's options. */
 function populateFormatSelector(handler, originalExtension) {
     formatButtons.innerHTML = '';
+
+    // Check if we should explicitly add the original format if it's not in the list 
+    // (e.g. if handler allows passing it through)
+    // For simplicity, we just iterate handler.formats. 
+    // We removed the filter that hid the original extension.
+
     handler.formats.forEach(format => {
-        if (format.toLowerCase() !== originalExtension.toLowerCase()) {
-            const button = document.createElement('button');
-            button.className = 'format-btn';
-            button.dataset.format = format;
-            button.textContent = format.toUpperCase();
-            formatButtons.appendChild(button);
+        const button = document.createElement('button');
+        button.className = 'format-btn';
+        button.dataset.format = format;
+        button.textContent = format.toUpperCase();
+
+        if (format.toLowerCase() === originalExtension.toLowerCase()) {
+            button.classList.add('original-format'); // Can be styled in CSS if needed
+            button.title = "Keep Original Format";
         }
+
+        formatButtons.appendChild(button);
     });
 }
 
@@ -313,7 +338,17 @@ async function startConversion(outputFormat) {
 
 /** Displays the final download link and reset button. */
 function showDownload(blobOrUrl, outputFileName) {
-    const url = (blobOrUrl instanceof Blob) ? URL.createObjectURL(blobOrUrl) : blobOrUrl;
+    let url;
+    if (blobOrUrl instanceof Blob) {
+        if (!blobOrUrl.type || blobOrUrl.type === 'application/octet-stream') {
+            const ext = outputFileName.split('.').pop();
+            const mime = getMimeType(ext);
+            blobOrUrl = new Blob([blobOrUrl], { type: mime });
+        }
+        url = URL.createObjectURL(blobOrUrl);
+    } else {
+        url = blobOrUrl;
+    }
 
     // Show a preview for image types
     const extension = outputFileName.split('.').pop().toLowerCase();
@@ -542,7 +577,47 @@ async function handleHtmlConversion(file, outputFormat, isPreview) {
 /** Handles ZIP and TAR.GZ conversions. */
 async function handleArchiveConversion(file, outputFormat, isPreview) {
     if (isPreview) {
-        filePreview.innerHTML = `<p>Archive file loaded: <strong>${file.name}</strong>. Ready to convert.</p>`;
+        // Zip Preview
+        filePreview.innerHTML = `
+            <p>Archive file loaded: <strong>${file.name}</strong>.</p>
+            <button id="view-zip-content-btn" class="action-btn secondary" style="margin-top: 10px; font-size: 0.8rem; padding: 6px 12px;">View Contents</button>
+            <div id="zip-content-list" style="display:none; text-align: left; background: var(--stone-900); padding: 10px; margin-top: 10px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.8rem;"></div>
+        `;
+
+        document.getElementById('view-zip-content-btn').addEventListener('click', async () => {
+            const listContainer = document.getElementById('zip-content-list');
+            listContainer.style.display = 'block';
+            listContainer.textContent = 'Loading...';
+
+            try {
+                await loadScript(CDN_URLS.jszip);
+                const zip = await JSZip.loadAsync(file);
+                listContainer.innerHTML = '';
+                const ul = document.createElement('ul');
+                ul.style.listStyle = 'none';
+                ul.style.padding = '0';
+
+                let count = 0;
+                zip.forEach((relativePath, zipEntry) => {
+                    if (count > 50) return; // Limit display
+                    const li = document.createElement('li');
+                    li.textContent = (zipEntry.dir ? '📁 ' : '📄 ') + relativePath;
+                    ul.appendChild(li);
+                    count++;
+                });
+
+                if (count > 50) {
+                    const li = document.createElement('li');
+                    li.textContent = '... and more files.';
+                    li.style.fontStyle = 'italic';
+                    ul.appendChild(li);
+                }
+                listContainer.appendChild(ul);
+            } catch (e) {
+                listContainer.textContent = 'Error reading archive content.';
+                console.error(e);
+            }
+        });
         return;
     }
 
@@ -550,7 +625,7 @@ async function handleArchiveConversion(file, outputFormat, isPreview) {
     await Promise.all([
         loadScript(CDN_URLS.jszip),
         loadScript(CDN_URLS.pako),
-        loadScript(CDN_URLS.tar)
+        loadScript(CDN_URLS.tar) // Ensure tar-js is loaded
     ]);
 
     const buffer = await file.arrayBuffer();
@@ -559,6 +634,13 @@ async function handleArchiveConversion(file, outputFormat, isPreview) {
 
     if (file.type === 'application/zip' && outputFormat === 'tar.gz') {
         const zip = await JSZip.loadAsync(buffer);
+        // Fix: accessing Tar properly. win.Tar or just Tar?
+        // tar-js usually exports 'Tar' to global scope.
+        // If it fails, check imports.
+        if (typeof Tar === 'undefined') {
+            throw new Error("Tar library failed to load correctly.");
+        }
+
         const tape = new Tar();
         let fileCount = 0;
         const totalFiles = Object.keys(zip.files).length;
@@ -577,7 +659,6 @@ async function handleArchiveConversion(file, outputFormat, isPreview) {
         showDownload(new Blob([compressed]), outputFileName);
     }
     // Note: TAR.GZ to ZIP would be a similar, but reversed, process.
-    // For brevity, only one direction is implemented here.
 }
 
 /** Handles Excel (XLSX, XLS) conversions. */
