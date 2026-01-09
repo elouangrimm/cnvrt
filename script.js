@@ -110,7 +110,7 @@ const CDN_URLS = {
     html2pdf: 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
     jszip: 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
     pako: 'https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js',
-    tar: 'https://cdn.jsdelivr.net/npm/tar-js@0.3.0/lib/tar.js',
+    tar: 'https://cdn.jsdelivr.net/npm/@gera2ld/tarjs@1.1.1/dist/tar.iife.min.js',
     sheetjs: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
     heic2any: 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.3/heic2any.min.js',
     psd: 'https://cdn.jsdelivr.net/npm/psd.js@3.2.0/dist/psd.min.js',
@@ -634,14 +634,13 @@ async function handleArchiveConversion(file, outputFormat, isPreview) {
 
     if (file.type === 'application/zip' && outputFormat === 'tar.gz') {
         const zip = await JSZip.loadAsync(buffer);
-        // Fix: accessing Tar properly. win.Tar or just Tar?
-        // tar-js usually exports 'Tar' to global scope.
-        // If it fails, check imports.
-        if (typeof Tar === 'undefined') {
+
+        // Fix: Use @gera2ld/tarjs
+        if (typeof tarjs === 'undefined') {
             throw new Error("Tar library failed to load correctly.");
         }
 
-        const tape = new Tar();
+        const tape = new tarjs.Tar();
         let fileCount = 0;
         const totalFiles = Object.keys(zip.files).length;
         for (const filename in zip.files) {
