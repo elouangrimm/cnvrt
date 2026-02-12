@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CnVrt — Neobrutalist Edition</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <meta name="description" content="A fast, minimal, on-device file converter.">
+    <meta name="color-scheme" content="light">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
+</head>
+
+<body>
+    <div class="page-bg">
+        <div class="bg-shape shape-1"></div>
+        <div class="bg-shape shape-2"></div>
+        <div class="bg-shape shape-3"></div>
+    </div>
+
+    <div class="container" id="drop-area">
+        <div class="content-wrapper">
+            <div class="badge">FILE CONVERTER</div>
+            <h1>CnVrt<span class="title-dot">.</span></h1>
+            <h2 id="subtitle">A fast, minimal, and on-device file converter for almost any file type.</h2>
+            <h2 id="funny-subtitle" style="display: none;"></h2>
+
+            <div id="initial-state">
+                <div class="drop-zone-brutalist">
+                    <div class="drop-hand">👋</div>
+                    <p id="upload-instruction">Drag & drop a file or select one below</p>
+                </div>
+                <button id="select-file-btn" class="action-btn">Select File →</button>
+                <p id="engine-loader"></p>
+            </div>
+
+            <input type="file" id="file-input" accept="
+                .jpg, .jpeg, .png, .gif, .bmp, .tiff, .webp, .svg, .ico, .heic, .heif, .psd,
+                .mp4, .mkv, .webm, .mov, .avi, .flv, .wmv, 
+                .mp3, .wav, .aac, .m4a, .ogg, .flac, .wma,
+                .pdf, .epub, .docx, .html, .txt,
+                .xlsx, .xls, .csv,
+                .zip, .tar, .gz,
+                .ttf, .otf, .woff, .woff2" />
+
+            <div class="file-preview" id="file-preview"></div>
+
+            <div id="conversion-controls" style="display: none;">
+                <div id="resize-controls" style="display: none;">
+                    <div class="resize-header">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="resize-enable">
+                            <span class="checkmark"></span>
+                            Resize Image
+                        </label>
+                    </div>
+                    <div id="resize-inputs" class="disabled">
+                        <div class="resize-row">
+                            <div class="input-group">
+                                <label for="resize-width">Width</label>
+                                <input type="number" id="resize-width" min="1" disabled>
+                                <span>px</span>
+                            </div>
+                            <div class="resize-link">
+                                <button id="resize-lock-btn" class="icon-btn active" title="Unlock Aspect Ratio">🔒</button>
+                            </div>
+                            <div class="input-group">
+                                <label for="resize-height">Height</label>
+                                <input type="number" id="resize-height" min="1" disabled>
+                                <span>px</span>
+                            </div>
+                        </div>
+                        <div class="resize-row">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="resize-pixel-art" disabled>
+                                <span class="checkmark"></span>
+                                Pixel Art Mode (Nearest Neighbor)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <label class="conversion-label">Pick a format!</label>
+                <div id="format-buttons" class="format-button-group"></div>
+            </div>
+
+            <div id="progress-container" style="display: none;">
+                <progress id="progress-bar" value="0" max="100"></progress>
+                <span id="progress-text"></span>
+            </div>
+
+            <div id="finished-state" style="display: none;">
+                <p id="finished-text">Done! 🎉</p>
+                <a id="download-link" class="action-btn" download>Download File ↓</a>
+                <button id="reset-btn" class="action-btn secondary">Again! ↻</button>
+            </div>
+            <footer id="app-footer">
+                <a href="https://elouan.xyz" target="_blank">elouan.xyz</a>
+                <span>/</span>
+                <a href="https://github.com/elouangrimm/cnvrt" target="_blank">github</a>
+            </footer>
+        </div>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+
+</html>
