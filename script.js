@@ -60,7 +60,7 @@ const fileSizeWarningDismiss = document.getElementById("file-size-warning-dismis
 const settingsBtn = document.getElementById("settings-btn");
 const historyBtn = document.getElementById("history-btn");
 const statsBtn = document.getElementById("stats-btn");
-const themeToggle = document.getElementById("theme-toggle");
+// theme toggle removed
 const shortcutsBtn = document.getElementById("shortcuts-btn");
 
 // Settings popup
@@ -328,6 +328,7 @@ function resetUI() {
     batchQueue.style.display = 'none';
     dropArea.classList.remove('file-loaded');
     fileInput.value = '';
+    folderInput.value = '';
     selectedFile = null;
     currentHandler = null;
     conversionCancelled = false;
@@ -337,6 +338,8 @@ function resetUI() {
     batchCancelled = false;
     batchConvertedBlobs = [];
     batchProgress.style.display = 'none';
+    const batchDownloadActions = document.getElementById('batch-download-actions');
+    if (batchDownloadActions) batchDownloadActions.style.display = 'none';
 
     // Reset Resize Controls
     resizeControls.style.display = 'none';
@@ -432,7 +435,7 @@ function populateFormatSelector(handler, originalExtension) {
         // Tooltip
         const tooltipText = FORMAT_TOOLTIPS[format] || '';
         let inner = format.toUpperCase();
-        if (idx < 9) inner += `<span class="format-key">${idx + 1}</span>`;
+        // keyboard shortcut numbers removed from UI
         if (tooltipText) inner += `<span class="format-tooltip">${tooltipText}</span>`;
         button.innerHTML = inner;
 
@@ -508,6 +511,9 @@ function cancelConversion() {
 // =================================================================
 function showDownload(blobOrUrl, outputFileName, inputSize) {
     if (conversionCancelled) return;
+
+    // Hide cancel button on completion
+    cancelBtn.style.display = 'none';
 
     const duration = conversionStartTime ? Date.now() - conversionStartTime : null;
 
@@ -629,7 +635,7 @@ function renderBatchFileList() {
         div.className = 'batch-file-item';
 
         let statusHtml = '';
-        if (entry.status === 'done') statusHtml = '<span class="batch-file-status done">✓</span>';
+        if (entry.status === 'done') statusHtml = `<span class="batch-file-status done">✓ → .${entry.convertedFormat || '?'}</span>`;
         else if (entry.status === 'error') statusHtml = '<span class="batch-file-status error">✗</span>';
         else if (entry.status === 'active') statusHtml = '<span class="batch-file-status active">⟳</span>';
         else statusHtml = '<span class="batch-file-status pending">•</span>';
@@ -675,6 +681,9 @@ async function startBatchConversion(outputFormat) {
     batchConvertedBlobs = [];
     batchProgress.style.display = 'block';
     batchFormatButtons.parentElement.style.display = 'none';
+    batchCancelBtn.style.display = 'inline-block';
+    const batchDownloadActions = document.getElementById('batch-download-actions');
+    if (batchDownloadActions) batchDownloadActions.style.display = 'none';
     conversionStartTime = Date.now();
 
     const total = batchFiles.length;
@@ -701,6 +710,7 @@ async function startBatchConversion(outputFormat) {
 
             const result = await convertFileToBlob(entry.file, format, entry.handler);
             entry.status = 'done';
+            entry.convertedFormat = format;
 
             // Record in stats/history
             const outputSize = result.blob ? result.blob.size : 0;
@@ -741,15 +751,15 @@ async function startBatchConversion(outputFormat) {
         ? 'Batch cancelled.'
         : `Done! ${batchConvertedBlobs.length}/${total} converted.`;
 
+    // Hide cancel button after completion
+    batchCancelBtn.style.display = 'none';
+
     // Notification
     CnvrtNotifications.send('Batch Complete', `${batchConvertedBlobs.length}/${total} files converted.`);
 
-    if (batchConvertedBlobs.length > 0) {
-        if (batchZipOutput.checked) {
-            await downloadBatchAsZip();
-        } else {
-            downloadBatchIndividually();
-        }
+    // Show download all button
+    if (batchConvertedBlobs.length > 0 && batchDownloadActions) {
+        batchDownloadActions.style.display = 'block';
     }
 }
 
@@ -1299,10 +1309,15 @@ fileInput.addEventListener("change", (event) => {
     const files = event.target.files;
     if (files.length > 1) handleMultipleFiles(files);
     else handleFileSelect(files[0]);
+    // Reset so the same file(s) can be picked again
+    fileInput.value = '';
 });
 
 folderInput.addEventListener("change", (event) => {
-    handleMultipleFiles(event.target.files);
+    const files = event.target.files;
+    handleMultipleFiles(files);
+    // Reset the folder input so the same folder can be picked again
+    folderInput.value = '';
 });
 
 // Drag & drop
@@ -1348,6 +1363,17 @@ batchFormatButtons.addEventListener('click', (event) => {
 cancelBtn.addEventListener('click', cancelConversion);
 batchCancelBtn.addEventListener('click', () => { batchCancelled = true; });
 batchRemoveAll.addEventListener('click', () => { batchFiles = []; resetUI(); });
+
+// Batch Download All button
+document.getElementById('batch-download-all')?.addEventListener('click', () => {
+    if (batchConvertedBlobs.length > 0) {
+        if (batchZipOutput.checked) {
+            downloadBatchAsZip();
+        } else {
+            downloadBatchIndividually();
+        }
+    }
+});
 
 // File size warning dismiss
 fileSizeWarningDismiss.addEventListener('click', () => { fileSizeWarning.style.display = 'none'; });
@@ -1400,7 +1426,6 @@ resizeHeight.addEventListener('input', () => {
 });
 
 // Top bar buttons
-themeToggle.addEventListener('click', () => CnvrtTheme.toggle());
 shortcutsBtn.addEventListener('click', () => CnvrtShortcuts.toggleOverlay());
 
 settingsBtn.addEventListener('click', () => {

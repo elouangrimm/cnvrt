@@ -17,7 +17,7 @@
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
@@ -33,13 +33,9 @@
         🔒 On-Device
     </div>
 
-    <!-- Offline Indicator -->
-    <div id="offline-indicator" class="offline-indicator mode-online">✓ Online</div>
-
     <!-- Top Bar -->
     <div id="top-bar">
         <div id="top-bar-left">
-            <button id="theme-toggle" class="icon-btn-small" title="Switch to Light Mode">☀️</button>
             <button id="shortcuts-btn" class="icon-btn-small" title="Keyboard Shortcuts (?)">⌨️</button>
         </div>
         <div id="top-bar-right">
@@ -194,6 +190,9 @@
                         <button id="batch-cancel-btn" class="action-btn secondary" style="font-size:0.75rem;padding:4px 10px;">Cancel</button>
                     </div>
                     <progress id="batch-progress-bar" value="0" max="100"></progress>
+                    <div id="batch-download-actions" style="display:none;margin-top:10px;">
+                        <button id="batch-download-all" class="action-btn" style="font-size:0.85rem;padding:8px 20px;">Download All</button>
+                    </div>
                 </div>
             </div>
 

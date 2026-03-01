@@ -58,6 +58,9 @@ self.addEventListener('fetch', (event) => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
+    // Skip unsupported schemes (chrome-extension, etc.)
+    if (!url.protocol.startsWith('http')) return;
+
     // CDN resources — cache first, network fallback
     if (url.origin !== self.location.origin) {
         event.respondWith(
