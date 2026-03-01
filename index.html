@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -11,16 +11,112 @@
     <meta property="og:title" content="CnVrt - Universal File Converter">
     <meta property="og:description" content="A fast, minimal, and on-device file converter for almost any file type.">
     <meta property="og:type" content="website">
-    <meta name="color-scheme" content="dark">
+    <meta name="color-scheme" content="dark light">
+    <meta name="theme-color" content="#0c0a09">
     <meta property="og:image" content="https://tasks.e5g.dev/card.png">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
     <link rel="stylesheet" href="style.css">
 
     <!-- Core Media Engine -->
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
-
 </head>
 
 <body>
+    <!-- Privacy Badge -->
+    <div id="privacy-badge" title="All conversions happen on your device. No files are uploaded.">
+        🔒 On-Device
+    </div>
+
+    <!-- Offline Indicator -->
+    <div id="offline-indicator" class="offline-indicator mode-online">✓ Online</div>
+
+    <!-- Top Bar -->
+    <div id="top-bar">
+        <div id="top-bar-left">
+            <button id="theme-toggle" class="icon-btn-small" title="Switch to Light Mode">☀️</button>
+            <button id="shortcuts-btn" class="icon-btn-small" title="Keyboard Shortcuts (?)">⌨️</button>
+        </div>
+        <div id="top-bar-right">
+            <button id="stats-btn" class="icon-btn-small" title="Stats & Achievements">📊</button>
+            <button id="history-btn" class="icon-btn-small" title="Conversion History (Ctrl+H)">🕐</button>
+            <button id="settings-btn" class="icon-btn-small" title="Settings (Ctrl+S)">⚙️</button>
+        </div>
+    </div>
+
+    <!-- Side Panel Overlay -->
+    <div id="panel-overlay"></div>
+
+    <!-- History Side Panel -->
+    <div id="history-panel" class="side-panel">
+        <div class="side-panel-header">
+            <h3>History</h3>
+            <button class="side-panel-close" data-close-panel="history-panel">✕</button>
+        </div>
+        <div id="history-panel-content" class="side-panel-content"></div>
+    </div>
+
+    <!-- Stats Side Panel -->
+    <div id="stats-panel" class="side-panel">
+        <div class="side-panel-header">
+            <h3>Stats & Achievements</h3>
+            <button class="side-panel-close" data-close-panel="stats-panel">✕</button>
+        </div>
+        <div id="stats-panel-content" class="side-panel-content"></div>
+    </div>
+
+    <!-- Settings Popup -->
+    <div id="settings-popup" class="modal-overlay">
+        <div class="modal-content settings-modal">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="modal-close" id="settings-close-btn">✕</button>
+            </div>
+            <div class="settings-list">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Auto-Download</span>
+                        <span class="setting-desc">Automatically download converted files</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="setting-auto-download" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Browser Notifications</span>
+                        <span class="setting-desc">Notify when conversions finish in background</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="setting-notifications">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Full Offline Mode</span>
+                        <span class="setting-desc">Cache all conversion engines for offline use (~50 MB)</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="setting-offline-mode">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="offline-progress" style="display: none;">
+                    <div class="offline-progress-bar"><div id="offline-progress-fill"></div></div>
+                    <span id="offline-progress-text">Caching engines...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
     <div class="container" id="drop-area">
         <div class="content-wrapper">
             <h1>CnVrt</h1>
@@ -29,22 +125,87 @@
 
             <!-- Initial State Content -->
             <div id="initial-state">
-                <p id="upload-instruction">Drag & drop a file or select one below</p>
-                <button id="select-file-btn" class="action-btn">Select File</button>
+                <p id="upload-instruction">Drag & drop files, paste from clipboard, or select below</p>
+
+                <div id="input-mode-tabs">
+                    <button class="input-tab active" data-tab="file-tab">File</button>
+                    <button class="input-tab" data-tab="url-tab">From URL</button>
+                    <button class="input-tab" data-tab="folder-tab">Folder</button>
+                </div>
+
+                <div id="file-tab" class="input-tab-content active">
+                    <button id="select-file-btn" class="action-btn">Select File(s)</button>
+                </div>
+
+                <div id="url-tab" class="input-tab-content">
+                    <div class="url-input-row">
+                        <input type="text" id="url-input" placeholder="https://example.com/image.png" autocomplete="off">
+                        <button id="url-fetch-btn" class="action-btn">Fetch</button>
+                    </div>
+                </div>
+
+                <div id="folder-tab" class="input-tab-content">
+                    <button id="select-folder-btn" class="action-btn">Select Folder</button>
+                    <p class="input-hint">All files in the folder will be queued for batch conversion.</p>
+                </div>
+
                 <p id="engine-loader"></p>
             </div>
 
-            <input type="file" id="file-input" accept="
+            <input type="file" id="file-input" multiple accept="
                 .jpg, .jpeg, .png, .gif, .bmp, .tiff, .webp, .svg, .ico, .heic, .heif, .psd,
-                .mp4, .mkv, .webm, .mov, .avi, .flv, .wmv, 
+                .mp4, .mkv, .webm, .mov, .avi, .flv, .wmv,
                 .mp3, .wav, .aac, .m4a, .ogg, .flac, .wma,
                 .pdf, .epub, .docx, .html, .txt,
                 .xlsx, .xls, .csv,
                 .zip, .tar, .gz,
                 .ttf, .otf, .woff, .woff2" />
 
-            <!-- File Selected & Conversion State Content -->
+            <input type="file" id="folder-input" webkitdirectory directory multiple />
+
+            <!-- Batch Queue Display -->
+            <div id="batch-queue" style="display: none;">
+                <div class="batch-header">
+                    <h3 id="batch-title">Batch Queue</h3>
+                    <div class="batch-actions">
+                        <button id="batch-remove-all" class="action-btn secondary" style="font-size:0.75rem;padding:4px 10px;">Clear All</button>
+                    </div>
+                </div>
+                <div id="batch-file-list" class="batch-file-list"></div>
+                <div id="batch-controls" class="batch-controls">
+                    <div id="batch-format-section">
+                        <label class="conversion-label">Convert all to:</label>
+                        <div id="batch-format-buttons" class="format-button-group"></div>
+                        <label class="checkbox-container" style="margin-top:10px;">
+                            <input type="checkbox" id="batch-zip-output">
+                            <span class="checkmark"></span>
+                            Download as ZIP
+                        </label>
+                        <label class="checkbox-container" id="batch-mixed-label" style="margin-top:6px;">
+                            <input type="checkbox" id="batch-mixed-format">
+                            <span class="checkmark"></span>
+                            Pick format per file
+                        </label>
+                    </div>
+                </div>
+                <div id="batch-progress" style="display:none;">
+                    <div class="batch-progress-header">
+                        <span id="batch-progress-text">Converting 0/0...</span>
+                        <button id="batch-cancel-btn" class="action-btn secondary" style="font-size:0.75rem;padding:4px 10px;">Cancel</button>
+                    </div>
+                    <progress id="batch-progress-bar" value="0" max="100"></progress>
+                </div>
+            </div>
+
+            <!-- File Selected & Conversion State Content (single file) -->
             <div class="file-preview" id="file-preview"></div>
+
+            <!-- File size warning -->
+            <div id="file-size-warning" style="display:none;">
+                <span id="file-size-warning-icon">⚠️</span>
+                <span id="file-size-warning-text"></span>
+                <button id="file-size-warning-dismiss" class="icon-btn-small">✕</button>
+            </div>
 
             <div id="conversion-controls" style="display: none;">
 
@@ -93,14 +254,19 @@
             <div id="progress-container" style="display: none;">
                 <progress id="progress-bar" value="0" max="100"></progress>
                 <span id="progress-text"></span>
+                <button id="cancel-btn" class="action-btn secondary" style="margin-top:8px;font-size:0.8rem;padding:6px 16px;">Cancel Conversion</button>
             </div>
 
             <!-- Finished State Content -->
             <div id="finished-state" style="display: none;">
                 <p id="finished-text">Conversion complete!</p>
                 <a id="download-link" class="action-btn" download>Download File</a>
-                <button id="reset-btn" class="action-btn secondary">Convert Another File</button>
+                <div id="finished-actions">
+                    <button id="share-settings-btn" class="action-btn secondary" title="Copy shareable link with these conversion settings">Share Settings</button>
+                    <button id="reset-btn" class="action-btn secondary">Convert Another File</button>
+                </div>
             </div>
+
             <footer id="app-footer">
                 <a href="https://elouan.xyz" target="_blank">elouan.xyz</a>
                 <span>•</span>
@@ -109,6 +275,7 @@
         </div>
     </div>
 
+    <script src="features.js"></script>
     <script src="script.js"></script>
 </body>
 
